@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Social Network Admin Panel
 
-## Getting Started
+Admin panel để quản lý hệ thống Social Network được xây dựng bằng Next.js 14, TypeScript và Tailwind CSS.
 
-First, run the development server:
+## Tính năng
 
+- ✅ Đăng nhập/Đăng xuất với JWT authentication
+- ✅ Quản lý người dùng (xem danh sách, chi tiết)
+- ✅ Tìm kiếm người dùng
+- ✅ Protected routes (chỉ admin mới truy cập được)
+- ✅ Responsive design với Tailwind CSS
+
+## Công nghệ sử dụng
+
+- **Next.js 14** - React framework với App Router
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Utility-first CSS framework
+- **Axios** - HTTP client
+- **React Hot Toast** - Toast notifications
+
+## Cài đặt
+
+1. Cài đặt dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Tạo file `.env.local` (hoặc sao chép từ `.env.example`):
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_FRONTEND_URL=http://localhost:3001
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Chạy development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Ứng dụng sẽ chạy tại [http://localhost:3001](http://localhost:3001)
 
-## Learn More
+## Cấu trúc dự án
 
-To learn more about Next.js, take a look at the following resources:
+```
+social_admin/
+├── app/                    # Next.js App Router
+│   ├── login/              # Trang đăng nhập
+│   ├── users/              # Quản lý người dùng
+│   │   └── [id]/           # Chi tiết user
+│   └── page.tsx            # Dashboard
+├── components/             # React components
+│   ├── auth/               # Authentication components
+│   ├── layout/             # Layout components
+│   ├── users/              # User management components
+│   └── ui/                 # Reusable UI components
+├── context/                # React Context
+│   └── AuthContext.tsx     # Authentication context
+├── hooks/                  # Custom hooks
+│   └── useAuth.ts
+├── lib/                    # Utilities
+│   ├── api.ts              # API client
+│   ├── auth.ts             # Auth utilities
+│   └── types.ts            # TypeScript types
+└── package.json
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API Endpoints
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ứng dụng kết nối với backend tại `NEXT_PUBLIC_API_URL`:
 
-## Deploy on Vercel
+- `POST /auth/login` - Đăng nhập
+- `GET /user` - Lấy danh sách users (ADMIN only)
+- `GET /user/:id` - Lấy chi tiết user
+- `GET /user/profile` - Lấy profile admin hiện tại
+- `GET /user/search` - Tìm kiếm users
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Yêu cầu
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Node.js 18+ 
+- Backend đang chạy tại port 3000
+- Tài khoản admin để đăng nhập
+
+## Scripts
+
+- `npm run dev` - Chạy development server (port 3001)
+- `npm run build` - Build production
+- `npm run start` - Chạy production server (port 3001)
+- `npm run lint` - Chạy ESLint
+
+## Ghi chú
+
+- Chỉ tài khoản có role `admin` mới có thể đăng nhập vào admin panel
+- Token được lưu trong localStorage
+- Tự động logout khi token hết hạn hoặc không hợp lệ
