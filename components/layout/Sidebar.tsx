@@ -50,8 +50,8 @@ const navigation: NavItem[] = [
     ),
   },
   {
-    name: 'Content',
-    href: '/content',
+    name: 'Posts',
+    href: '/posts',
     icon: (
       <svg
         className="w-5 h-5"
@@ -69,8 +69,8 @@ const navigation: NavItem[] = [
     ),
   },
   {
-    name: 'Analytics',
-    href: '/analytics',
+    name: 'Stories',
+    href: '/stories',
     icon: (
       <svg
         className="w-5 h-5"

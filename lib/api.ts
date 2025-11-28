@@ -2,12 +2,13 @@
 
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { auth } from './auth';
-import type { 
-  ApiError, 
-  User, 
-  PostList, 
-  Story, 
-  React, 
+import type {
+  ApiError,
+  User,
+  Post,
+  PostList,
+  Story,
+  React,
   Comment,
   AdminUsersResponse,
   AdminPostsResponse,
@@ -16,7 +17,7 @@ import type {
   DashboardStats,
   UserGrowthData,
   PostStatsData,
-  UserActivity
+  Pagination,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -83,7 +84,7 @@ export const api = {
     return response.data.data;
   },
 
-  // Users (Legacy - có thể giữ để tương thích)
+  // Users
   getAllUsers: async (): Promise<User[]> => {
     const response = await apiClient.get('/user');
     // Backend trả về { statusCode, message, data: User[] }
@@ -110,13 +111,42 @@ export const api = {
     return response.data.data;
   },
 
+  getUserPostsByAdmin: async (userId: string, page: number = 1, limit: number = 10): Promise<PostList> => {
+    const response = await apiClient.get(`/admin/users/${userId}/posts`, {
+      params: { page, limit },
+    });
+    return response.data.data;
+  },
+
+  getUserStoriesByAdmin: async (userId: string): Promise<Story[]> => {
+    const response = await apiClient.get(`/admin/users/${userId}/stories`);
+    return response.data.data || [];
+  },
+
+  // Post Reacts and Comments
+  getPostReacts: async (postId: string): Promise<React[]> => {
+    const response = await apiClient.get(`/admin/posts/${postId}/reacts`);
+    return response.data.data || [];
+  },
+
+  getPostComments: async (postId: string): Promise<Comment[]> => {
+    const response = await apiClient.get(`/admin/posts/${postId}/comments`);
+    return response.data.data || [];
+  },
+
+  // Story Reacts
+  getStoryReacts: async (storyId: string): Promise<React[]> => {
+    const response = await apiClient.get(`/admin/stories/${storyId}/reacts`);
+    return response.data.data || [];
+  },
+
   // ===== Admin APIs - User Management =====
   adminGetAllUsers: async (
-    page: number = 1, 
-    limit: number = 10, 
-    search?: string, 
-    role?: string, 
-    isActive?: boolean
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    role?: string,
+    isActive?: boolean,
   ): Promise<AdminUsersResponse> => {
     const params: any = { page, limit };
     if (search) params.search = search;
@@ -132,35 +162,27 @@ export const api = {
     return response.data.data || response.data;
   },
 
-  adminGetUserFriends: async (userId: string): Promise<any[]> => {
+  adminDeleteUser: async (userId: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete(`/admin/users/${userId}`);
+    return response.data.data || response.data;
+  },
+
+  adminGetUserFriends: async (userId: string): Promise<User[]> => {
     const response = await apiClient.get(`/admin/users/${userId}/friends`);
     return response.data.data || response.data || [];
   },
 
-  adminGetUserActivity: async (userId: string): Promise<UserActivity> => {
+  adminGetUserActivity: async (userId: string): Promise<any> => {
     const response = await apiClient.get(`/admin/users/${userId}/activity`);
     return response.data.data || response.data;
   },
 
-  // ===== Admin APIs - User Content =====
-  getUserPostsByAdmin: async (userId: string, page: number = 1, limit: number = 10): Promise<PostList> => {
-    const response = await apiClient.get(`/admin/users/${userId}/posts`, {
-      params: { page, limit },
-    });
-    return response.data.data || response.data;
-  },
-
-  getUserStoriesByAdmin: async (userId: string): Promise<Story[]> => {
-    const response = await apiClient.get(`/admin/users/${userId}/stories`);
-    return response.data.data || response.data || [];
-  },
-
   // ===== Admin APIs - Post Management =====
   adminGetAllPosts: async (
-    page: number = 1, 
-    limit: number = 10, 
-    search?: string, 
-    userId?: string
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    userId?: string,
   ): Promise<AdminPostsResponse> => {
     const params: any = { page, limit };
     if (search) params.search = search;
@@ -170,28 +192,33 @@ export const api = {
     return response.data.data || response.data;
   },
 
-  adminGetPostById: async (postId: string): Promise<any> => {
+  adminGetPostById: async (postId: string): Promise<Post> => {
     const response = await apiClient.get(`/admin/posts/${postId}`);
     return response.data.data || response.data;
   },
 
-  getPostReacts: async (postId: string): Promise<React[]> => {
-    const response = await apiClient.get(`/admin/posts/${postId}/reacts`);
-    return response.data.data || response.data || [];
+  adminDeletePost: async (postId: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete(`/admin/posts/${postId}`);
+    return response.data.data || response.data;
   },
 
-  getPostComments: async (postId: string): Promise<Comment[]> => {
-    const response = await apiClient.get(`/admin/posts/${postId}/comments`);
-    return response.data.data || response.data || [];
+  adminHidePost: async (postId: string): Promise<{ message: string }> => {
+    const response = await apiClient.put(`/admin/posts/${postId}/hide`);
+    return response.data.data || response.data;
+  },
+
+  adminUnhidePost: async (postId: string): Promise<{ message: string }> => {
+    const response = await apiClient.put(`/admin/posts/${postId}/unhide`);
+    return response.data.data || response.data;
   },
 
   // ===== Admin APIs - Story Management =====
   adminGetAllStories: async (
-    page: number = 1, 
-    limit: number = 10, 
-    userId?: string, 
-    dateFrom?: string, 
-    dateTo?: string
+    page: number = 1,
+    limit: number = 10,
+    userId?: string,
+    dateFrom?: string,
+    dateTo?: string,
   ): Promise<AdminStoriesResponse> => {
     const params: any = { page, limit };
     if (userId) params.userId = userId;
@@ -207,18 +234,18 @@ export const api = {
     return response.data.data || response.data;
   },
 
-  getStoryReacts: async (storyId: string): Promise<React[]> => {
-    const response = await apiClient.get(`/admin/stories/${storyId}/reacts`);
-    return response.data.data || response.data || [];
+  adminDeleteStory: async (storyId: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete(`/admin/stories/${storyId}`);
+    return response.data.data || response.data;
   },
 
   // ===== Admin APIs - Comment Management =====
   adminGetAllComments: async (
-    page: number = 1, 
-    limit: number = 10, 
-    search?: string, 
-    postId?: string, 
-    userId?: string
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    postId?: string,
+    userId?: string,
   ): Promise<AdminCommentsResponse> => {
     const params: any = { page, limit };
     if (search) params.search = search;
@@ -234,26 +261,31 @@ export const api = {
     return response.data.data || response.data;
   },
 
+  adminDeleteComment: async (commentId: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete(`/admin/comments/${commentId}`);
+    return response.data.data || response.data;
+  },
+
   // ===== Admin APIs - Dashboard Stats =====
   adminGetDashboardStats: async (): Promise<DashboardStats> => {
     const response = await apiClient.get('/admin/dashboard/stats');
     return response.data.data || response.data;
   },
 
-  adminGetUsersGrowth: async (days: number = 30): Promise<UserGrowthData> => {
+  adminGetUsersGrowth: async (days: number = 30): Promise<UserGrowthData[]> => {
     const response = await apiClient.get('/admin/dashboard/users-growth', {
       params: { days },
     });
-    return response.data.data || response.data;
+    return response.data.data || response.data || [];
   },
 
   adminGetPostsStats: async (
-    groupBy: 'day' | 'month' = 'day', 
-    days: number = 30
-  ): Promise<PostStatsData> => {
+    groupBy: 'day' | 'month' = 'day',
+    days: number = 30,
+  ): Promise<PostStatsData[]> => {
     const response = await apiClient.get('/admin/dashboard/posts-stats', {
       params: { groupBy, days },
     });
-    return response.data.data || response.data;
+    return response.data.data || response.data || [];
   },
 };

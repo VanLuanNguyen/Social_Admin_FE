@@ -13,40 +13,6 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   role: 'admin' | 'user';
-  lastActiveAt?: string;
-}
-
-export type ActivityType = 'post' | 'story' | 'comment' | 'reaction';
-
-export interface ReactionPayload {
-  targetType: 'post' | 'story';
-  targetId?: string;
-  target?: Post | Story;
-  emoji?: {
-    _id?: string;
-    label?: string;
-    icon?: string;
-    name?: string;
-  };
-}
-
-export interface ActivityTimelineItem {
-  type: ActivityType;
-  id: string;
-  createdAt: string;
-  payload: Post | Story | Comment | ReactionPayload;
-}
-
-export interface UserActivity {
-  posts: Post[];
-  stories: Story[];
-  comments: Comment[];
-  reactions?: {
-    posts?: any[];
-    stories?: any[];
-  };
-  activity?: ActivityTimelineItem[];
-  lastActive?: string | null;
 }
 
 export interface LoginResponse {
@@ -94,6 +60,7 @@ export interface Post {
   privacy_type?: string;
   reacts?: any[];
   isReact?: any;
+  comments?: Comment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -183,30 +150,14 @@ export interface DashboardStats {
   totalComments: number;
   newUsersThisMonth: number;
   newPostsThisMonth: number;
-  recentActivity?: {
-    posts: Post[];
-    stories: Story[];
-    comments: Comment[];
-  };
-}
-
-export interface UserGrowthDataPoint {
-  date: string;
-  count: number;
-  total: number;
 }
 
 export interface UserGrowthData {
-  data: UserGrowthDataPoint[];
-  totalUsers: number;
-}
-
-export interface PostStatsDataPoint {
   date: string;
   count: number;
 }
 
 export interface PostStatsData {
-  data: PostStatsDataPoint[];
-  totalPosts: number;
+  date: string;
+  count: number;
 }

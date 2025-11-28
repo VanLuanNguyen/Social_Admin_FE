@@ -194,16 +194,9 @@ export default function UserManagementColumn() {
           <table className="min-w-full text-left">
             <thead className="text-xs uppercase tracking-widest text-slate-500 bg-slate-900/30">
               <tr>
-                <th className="px-6 py-4 font-medium">
-                  <input
-                    type="checkbox"
-                    disabled
-                    className="h-4 w-4 rounded border-slate-600 bg-transparent text-blue-500"
-                  />
-                </th>
                 <th className="px-6 py-4 font-medium">Tên người dùng</th>
                 <th className="px-6 py-4 font-medium">Vai trò</th>
-                <th className="px-6 py-4 font-medium">Trạng thái</th>
+                <th className="px-7 py-4 font-medium">Trạng thái</th>
                 <th className="px-6 py-4 font-medium">Ngày tham gia</th>
                 <th className="px-6 py-4 font-medium text-right">Hành động</th>
               </tr>
@@ -259,15 +252,6 @@ export default function UserManagementColumn() {
                             isSelected ? 'bg-blue-500/10' : 'hover:bg-slate-900/40'
                           }`}
                         >
-                          <td className="px-6 py-4">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => setSelectedUserId(user.userId)}
-                              onClick={(event) => event.stopPropagation()}
-                              className="h-4 w-4 rounded border-slate-600 bg-transparent text-blue-500"
-                            />
-                          </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-4">
                               {user.avatarUrl ? (

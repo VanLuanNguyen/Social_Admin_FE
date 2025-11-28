@@ -1,646 +1,503 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import type { User, Post, Story, Comment } from '@/lib/types';
 import { useUsers } from '@/context/UsersContext';
-import type {
-  ActivityTimelineItem,
-  ReactionPayload,
-  Comment,
-  Post,
-  Story,
-  User,
-  UserActivity,
-} from '@/lib/types';
-import toast from 'react-hot-toast';
+import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
+import toast from 'react-hot-toast';
 
-type DetailTab = 'details' | 'friends';
-type ActivityTab = 'timeline' | 'posts' | 'stories' | 'comments' | 'reactions';
-interface ActivityItem {
-  id: string;
-  title: string;
-  meta?: string;
-  createdAt?: string;
-  badge: string;
-  color: string;
+type TabType = 'info' | 'friends' | 'activity';
+
+interface ActivityTimelineItem {
   type: 'post' | 'story' | 'comment' | 'reaction';
-  targetType?: 'post' | 'story';
-  targetId?: string;
-}
-
-interface FriendSummary {
   id: string;
-  fullName: string;
-  avatarUrl?: string;
-  bio?: string;
-  mutualFriendsCount?: number;
-  friendsSince?: string;
+  createdAt: string;
+  payload: any;
 }
-
-const roleBadges: Record<User['role'], { label: string; className: string }> = {
-  admin: {
-    label: 'Admin',
-    className: 'bg-blue-500/15 text-blue-200 border border-blue-400/30',
-  },
-  user: {
-    label: 'User',
-    className: 'bg-slate-500/15 text-slate-200 border border-slate-400/30',
-  },
-};
-
-const normalizeFriend = (raw: any): FriendSummary | null => {
-  if (!raw) return null;
-  const candidate = raw.user || raw.friend || raw.friendId || raw.userId || raw;
-  const id =
-    raw.userId?.userId ||
-    raw.userId?._id ||
-    raw.friendId?.userId ||
-    raw.friendId?._id ||
-    candidate?.userId ||
-    candidate?._id ||
-    raw.userId ||
-    raw.friendId ||
-    raw.id ||
-    raw._id;
-
-  const fullName = candidate?.fullName || raw.fullName;
-  if (!id || !fullName) {
-    return null;
-  }
-
-  return {
-    id: id.toString(),
-    fullName,
-    avatarUrl: candidate?.avatarUrl || raw.avatarUrl,
-    bio: candidate?.bio || raw.bio,
-    friendsSince: candidate?.friendsSince ?? raw.friendsSince,
-    mutualFriendsCount: raw.mutualFriendsCount,
-  };
-};
 
 export default function UserProfileColumn() {
   const { selectedUserId } = useUsers();
   const [user, setUser] = useState<User | null>(null);
-  const [loadingUser, setLoadingUser] = useState(false);
-  const [activeTab, setActiveTab] = useState<DetailTab>('details');
-  const [friends, setFriends] = useState<FriendSummary[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('info');
+  
+  // Friends data
+  const [friends, setFriends] = useState<User[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
-  const [activity, setActivity] = useState<UserActivity | null>(null);
+  
+  // Activity data
+  const [activity, setActivity] = useState<any>(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
-  const [activityTab, setActivityTab] = useState<ActivityTab>('timeline');
   const [showActivityModal, setShowActivityModal] = useState(false);
-  const [selectedActivityItem, setSelectedActivityItem] = useState<ActivityItem | null>(null);
-  const [activityDetail, setActivityDetail] = useState<Post | Story | null>(null);
-  const [activityDetailType, setActivityDetailType] = useState<'post' | 'story' | null>(null);
-  const [showActivityDetailModal, setShowActivityDetailModal] = useState(false);
-  const [loadingActivityDetail, setLoadingActivityDetail] = useState(false);
+  
+  // Detail modal states
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailType, setDetailType] = useState<'post' | 'story' | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [openedFromActivityModal, setOpenedFromActivityModal] = useState(false);
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (!selectedUserId) {
+    if (selectedUserId) {
+      loadUserDetails();
+    } else {
       setUser(null);
-      setActivity(null);
-      setActiveTab('details');
-      setFriends([]);
-      return;
+      setActiveTab('info');
     }
-
-    const loadUser = async () => {
-      try {
-        setLoadingUser(true);
-        const data = await api.adminGetUserById(selectedUserId);
-        setUser(data);
-      } catch (error: any) {
-        const errorMessage =
-          error?.response?.data?.message ||
-          error?.message ||
-          'Không thể tải thông tin người dùng';
-        toast.error(errorMessage);
-        setUser(null);
-      } finally {
-        setLoadingUser(false);
-      }
-    };
-
-    const loadActivity = async () => {
-      try {
-        setLoadingActivity(true);
-        const data = await api.adminGetUserActivity(selectedUserId);
-        setActivity({
-          posts: data?.posts || [],
-          stories: data?.stories || [],
-          comments: data?.comments || [],
-          activity: data?.activity || [],
-          lastActive: data?.lastActive || null,
-        });
-      } catch (error: any) {
-        const errorMessage =
-          error?.response?.data?.message ||
-          error?.message ||
-          'Không thể tải hoạt động người dùng';
-        toast.error(errorMessage);
-        setActivity(null);
-      } finally {
-        setLoadingActivity(false);
-      }
-    };
-
-    loadUser();
-    loadActivity();
   }, [selectedUserId]);
 
   useEffect(() => {
-    if (activeTab !== 'friends' || !selectedUserId) {
-      return;
+    if (selectedUserId && activeTab === 'friends') {
+      loadFriends();
     }
+  }, [selectedUserId, activeTab]);
 
-    const loadFriends = async () => {
-      try {
-        setLoadingFriends(true);
-        const data = await api.adminGetUserFriends(selectedUserId);
-        const normalized =
-          (data || [])
-            .map((item: any) => normalizeFriend(item))
-            .filter(Boolean) as FriendSummary[];
-        setFriends(normalized);
-      } catch (error: any) {
-        const errorMessage =
-          error?.response?.data?.message ||
-          error?.message ||
-          'Không thể tải danh sách bạn bè';
-        toast.error(errorMessage);
-        setFriends([]);
-      } finally {
-        setLoadingFriends(false);
-      }
-    };
-
-    loadFriends();
-  }, [activeTab, selectedUserId]);
-
-  const formatDate = (value?: string) => {
-    if (!value) return '—';
-    return new Date(value).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
-
-  const renderPlaceholder = (message: string) => (
-    <div className="flex flex-1 flex-col items-center justify-center text-center text-slate-400 px-6 py-16">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        className="w-12 h-12 mb-4 text-slate-600"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 17v-6m0-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"
-        />
-      </svg>
-      <p>{message}</p>
-    </div>
-  );
-
-  const lastActiveLabel = (activity?.lastActive || user?.lastActiveAt)
-    ? new Date(activity?.lastActive || (user?.lastActiveAt as string)).toLocaleString('vi-VN')
-    : 'Chưa có dữ liệu';
-
-  const formatDateTime = (value?: string) => {
-    if (!value) return '—';
-    return new Date(value).toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const handleActivityItemClick = async (item: ActivityItem) => {
-    if (!item.targetType || !item.targetId) {
-      toast.error('Hoạt động này không có dữ liệu chi tiết');
-      return;
+  useEffect(() => {
+    if (selectedUserId && activeTab === 'activity') {
+      loadActivity();
     }
+  }, [selectedUserId, activeTab]);
 
-    setSelectedActivityItem(item);
-    setShowActivityModal(false);
-    setShowActivityDetailModal(true);
-    setActivityDetail(null);
-    setActivityDetailType(item.targetType);
-    setLoadingActivityDetail(true);
+  const loadUserDetails = async () => {
+    if (!selectedUserId) return;
 
     try {
-      const detail =
-        item.targetType === 'post'
-          ? await api.adminGetPostById(item.targetId)
-          : await api.adminGetStoryById(item.targetId);
-      setActivityDetail(detail);
+      setLoading(true);
+      const userData = await api.adminGetUserById(selectedUserId);
+      setUser(userData);
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        'Không thể tải chi tiết hoạt động';
+        'Không thể tải thông tin người dùng';
       toast.error(errorMessage);
-      setActivityDetail(null);
     } finally {
-      setLoadingActivityDetail(false);
+      setLoading(false);
     }
   };
 
-const buildPostItems = (postsData: Post[] = []): ActivityItem[] =>
-    postsData.map((post) => ({
-      id: post._id,
-      title: post.caption || 'Bài viết không có tiêu đề',
-      meta: `Đăng lúc ${formatDateTime(post.createdAt)}`,
-      createdAt: post.createdAt,
-      badge: 'Bài viết',
-      color: 'bg-indigo-500/15 text-indigo-200 border border-indigo-500/30',
-    type: 'post',
-    targetType: 'post',
-    targetId: post._id,
-    }));
+  const loadFriends = async () => {
+    if (!selectedUserId) return;
 
-  const buildStoryItems = (storiesData: Story[] = []): ActivityItem[] =>
-    storiesData.map((story) => ({
-      id: story._id,
-      title: story.title || 'Story không có tiêu đề',
-      meta: story.mediaType ? `Loại: ${story.mediaType}` : undefined,
-      createdAt: story.createdAt,
-      badge: 'Story',
-      color: 'bg-amber-500/15 text-amber-200 border border-amber-500/30',
-    type: 'story',
-    targetType: 'story',
-    targetId: story._id,
-    }));
-
-  const buildCommentItems = (commentsData: Comment[] = []): ActivityItem[] =>
-    commentsData.map((comment) => ({
-      id: comment._id,
-      title: comment.content || 'Bình luận không có nội dung',
-      meta: comment.postId ? `Trong bài viết ${comment.postId}` : undefined,
-      createdAt: comment.createdAt,
-      badge: 'Bình luận',
-      color: 'bg-emerald-500/15 text-emerald-200 border border-emerald-500/30',
-    type: 'comment',
-    targetType: 'post',
-    targetId: typeof comment.postId === 'string' ? comment.postId : (comment.postId as any)?._id?.toString(),
-    }));
-
-  const mapTimelineEntry = (entry: ActivityTimelineItem): ActivityItem => {
-    switch (entry.type) {
-      case 'post': {
-        const payload = entry.payload as Post;
-        return {
-          id: entry.id,
-          title: payload?.caption || 'Bài viết không có tiêu đề',
-          meta: `Đăng lúc ${formatDateTime(entry.createdAt)}`,
-          createdAt: entry.createdAt,
-          badge: 'Bài viết',
-          color: 'bg-indigo-500/15 text-indigo-200 border border-indigo-500/30',
-          type: 'post',
-          targetType: 'post',
-          targetId: payload?._id || entry.id,
-        };
-      }
-      case 'story': {
-        const payload = entry.payload as Story;
-        return {
-          id: entry.id,
-          title: payload?.title || 'Story không có tiêu đề',
-          meta: payload?.mediaType ? `Loại: ${payload.mediaType}` : undefined,
-          createdAt: entry.createdAt,
-          badge: 'Story',
-          color: 'bg-amber-500/15 text-amber-200 border border-amber-500/30',
-          type: 'story',
-          targetType: 'story',
-          targetId: payload?._id || entry.id,
-        };
-      }
-      case 'comment': {
-        const payload = entry.payload as Comment;
-        return {
-          id: entry.id,
-          title: payload?.content || 'Bình luận không có nội dung',
-          meta: payload?.postId ? `Trong bài viết ${payload.postId}` : undefined,
-          createdAt: entry.createdAt,
-          badge: 'Bình luận',
-          color: 'bg-emerald-500/15 text-emerald-200 border border-emerald-500/30',
-          type: 'comment',
-          targetType: 'post',
-          targetId:
-            typeof payload?.postId === 'string'
-              ? payload.postId
-              : (payload?.postId as any)?._id?.toString(),
-        };
-      }
-      case 'reaction': {
-        const payload = entry.payload as ReactionPayload;
-        const emojiLabel = payload?.emoji?.label || payload?.emoji?.name || payload?.emoji?.icon || '';
-        const targetTitle =
-          payload?.targetType === 'post'
-            ? ((payload?.target as Post)?.caption || `Bài viết ${payload?.targetId ?? ''}`)
-            : ((payload?.target as Story)?.title || `Story ${payload?.targetId ?? ''}`);
-
-        return {
-          id: entry.id,
-          title:
-            payload?.targetType === 'post'
-              ? `Thả cảm xúc bài viết: ${targetTitle}`
-              : `Thả cảm xúc story: ${targetTitle}`,
-          meta: emojiLabel ? `Emoji: ${emojiLabel}` : undefined,
-          createdAt: entry.createdAt,
-          badge: 'Cảm xúc',
-          color: 'bg-pink-500/15 text-pink-200 border border-pink-500/30',
-          type: 'reaction',
-          targetType: payload?.targetType,
-          targetId: payload?.targetId,
-        };
-      }
-      default: {
-        return {
-          id: entry.id,
-          title: 'Hoạt động chưa xác định',
-          meta: undefined,
-          createdAt: entry.createdAt,
-          badge: 'Hoạt động',
-          color: 'bg-slate-500/15 text-slate-200 border border-slate-500/30',
-          type: 'post',
-        };
-      }
+    try {
+      setLoadingFriends(true);
+      const friendsData = await api.adminGetUserFriends(selectedUserId);
+      setFriends(friendsData || []);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể tải danh sách bạn bè';
+      toast.error(errorMessage);
+    } finally {
+      setLoadingFriends(false);
     }
   };
 
-  const timelineItems = useMemo<ActivityItem[]>(() => {
-    if (activity?.activity && activity.activity.length > 0) {
-      return activity.activity
-        .map((entry) => mapTimelineEntry(entry))
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-        );
+  const loadActivity = async () => {
+    if (!selectedUserId) return;
+
+    try {
+      setLoadingActivity(true);
+      const activityData = await api.adminGetUserActivity(selectedUserId);
+      setActivity(activityData);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể tải hoạt động';
+      toast.error(errorMessage);
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  const handleActivityClick = async (item: ActivityTimelineItem, fromModal: boolean = false) => {
+    const wasOpenedFromModal = fromModal && showActivityModal;
+    
+    try {
+      // Nếu mở từ modal hoạt động, đánh dấu và đóng modal hoạt động
+      if (wasOpenedFromModal) {
+        setOpenedFromActivityModal(true);
+        setShowActivityModal(false);
+      } else {
+        setOpenedFromActivityModal(false);
+      }
+
+      setIsDetailOpen(true);
+      setLoadingDetail(true);
+      setDetailType(null);
+      setSelectedPost(null);
+      setSelectedStory(null);
+
+      // Xác định loại hoạt động và lấy targetId
+      let targetId: string | undefined;
+      let type: 'post' | 'story' | null = null;
+
+      if (item.type === 'post') {
+        targetId = item.id;
+        type = 'post';
+      } else if (item.type === 'story') {
+        targetId = item.id;
+        type = 'story';
+      } else if (item.type === 'comment') {
+        // Với comment, điều hướng đến post chứa comment đó
+        targetId = item.payload?.postId?._id?.toString() || item.payload?.postId?.toString();
+        type = 'post';
+      } else if (item.type === 'reaction') {
+        // Với reaction, điều hướng đến target (post hoặc story)
+        const targetType = item.payload?.targetType;
+        targetId = item.payload?.targetId;
+        
+        if (targetType === 'post') {
+          type = 'post';
+        } else if (targetType === 'story') {
+          type = 'story';
+        }
+      }
+
+      if (!targetId || !type) {
+        toast.error('Không thể tải chi tiết hoạt động này');
+        setIsDetailOpen(false);
+        setLoadingDetail(false);
+        // Nếu đã đóng modal hoạt động, mở lại
+        if (wasOpenedFromModal) {
+          setShowActivityModal(true);
+          setOpenedFromActivityModal(false);
+        }
+        return;
+      }
+
+      setDetailType(type);
+
+      // Lấy chi tiết dựa vào type
+      if (type === 'post') {
+        // Đảm bảo targetId là string
+        const postIdString = typeof targetId === 'string' ? targetId : String(targetId);
+        const postDetail = await api.adminGetPostById(postIdString);
+        setSelectedPost(postDetail);
+      } else if (type === 'story') {
+        // Đảm bảo targetId là string
+        const storyIdString = typeof targetId === 'string' ? targetId : String(targetId);
+        const storyDetail = await api.adminGetStoryById(storyIdString);
+        setSelectedStory(storyDetail);
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể tải chi tiết';
+      toast.error(errorMessage);
+      setIsDetailOpen(false);
+      setSelectedPost(null);
+      setSelectedStory(null);
+      setDetailType(null);
+      // Nếu đã đóng modal hoạt động do lỗi, mở lại
+      if (wasOpenedFromModal) {
+        setShowActivityModal(true);
+        setOpenedFromActivityModal(false);
+      }
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const handleCloseDetail = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
+    setIsDetailOpen(false);
+    setSelectedPost(null);
+    setSelectedStory(null);
+    setDetailType(null);
+    
+    if (openedFromActivityModal) {
+      setShowActivityModal(true);
+      setOpenedFromActivityModal(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isDetailOpen && detailType === 'story' && selectedStory?.music?.preview && audioRef.current) {
+      const audio = audioRef.current;
+      
+      const handlePlay = () => setIsPlaying(true);
+      const handlePause = () => setIsPlaying(false);
+      const handleEnded = () => setIsPlaying(false);
+      
+      audio.addEventListener('play', handlePlay);
+      audio.addEventListener('pause', handlePause);
+      audio.addEventListener('ended', handleEnded);
+      
+      const currentSrc = audio.src;
+      const newSrc = selectedStory.music.preview;
+      
+      if (!currentSrc || currentSrc !== newSrc) {
+        audio.src = newSrc;
+        audio.volume = 0.5;
+        audio.load();
+      }
+      
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsPlaying(true))
+          .catch((error) => {
+            console.error('Lỗi phát nhạc:', error);
+            setIsPlaying(false);
+          });
+      }
+      
+      return () => {
+        audio.removeEventListener('play', handlePlay);
+        audio.removeEventListener('pause', handlePause);
+        audio.removeEventListener('ended', handleEnded);
+      };
+    } else if (audioRef.current && (!isDetailOpen || detailType !== 'story')) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
     }
 
-    const legacyItems = [
-      ...buildPostItems(activity?.posts || []),
-      ...buildStoryItems(activity?.stories || []),
-      ...buildCommentItems(activity?.comments || []),
-    ];
+    return () => {
+      if (audioRef.current && (!isDetailOpen || detailType !== 'story')) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        setIsPlaying(false);
+      }
+    };
+  }, [isDetailOpen, detailType, selectedStory]);
 
-    return legacyItems.sort(
-      (a, b) =>
-        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+  if (!selectedUserId) {
+    return (
+      <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+        <p className="text-slate-400 text-center">Chọn một người dùng để xem chi tiết</p>
+      </div>
     );
-  }, [activity]);
+  }
 
-  const activityItems = useMemo<Record<ActivityTab, ActivityItem[]>>(
-    () => ({
-      timeline: timelineItems,
-      posts: timelineItems.filter((item) => item.type === 'post'),
-      stories: timelineItems.filter((item) => item.type === 'story'),
-      comments: timelineItems.filter((item) => item.type === 'comment'),
-      reactions: timelineItems.filter((item) => item.type === 'reaction'),
-    }),
-    [timelineItems]
-  );
+  if (loading && !user) {
+    return (
+      <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+        <p className="text-slate-400 text-center">Đang tải...</p>
+      </div>
+    );
+  }
 
-  const activityCounts = useMemo<Record<ActivityTab, number>>(
-    () => ({
-      timeline: activityItems.timeline.length,
-      posts: activityItems.posts.length,
-      stories: activityItems.stories.length,
-      comments: activityItems.comments.length,
-      reactions: activityItems.reactions.length,
-    }),
-    [activityItems]
-  );
+  if (!user) {
+    return (
+      <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+        <p className="text-slate-400 text-center">Không tìm thấy người dùng</p>
+      </div>
+    );
+  }
+
+  const tabs: { id: TabType; label: string }[] = [
+    { id: 'info', label: 'Thông tin' },
+    { id: 'friends', label: 'Bạn bè' },
+    { id: 'activity', label: 'Hoạt động' },
+  ];
 
   return (
-    <section className="rounded-3xl border border-slate-800 bg-[#090f1c] flex flex-col min-h-[640px]">
-      {!selectedUserId
-        ? renderPlaceholder('Chọn một người dùng ở bảng bên trái để xem chi tiết')
-        : loadingUser
-          ? renderPlaceholder('Đang tải thông tin người dùng...')
-          : !user
-            ? renderPlaceholder('Không tìm thấy người dùng')
-            : (
-              <>
-                <div className="p-8 border-b border-slate-800 flex flex-col items-center text-center gap-4">
-                  {user.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt={user.fullName}
-                      className="w-28 h-28 rounded-full object-cover ring-4 ring-blue-500/20"
-                    />
-                  ) : (
-                    <div className="w-28 h-28 rounded-full bg-slate-800 flex items-center justify-center text-2xl font-semibold text-white ring-4 ring-blue-500/10">
-                      {user.fullName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+    <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+      {/* Header */}
+      <div className="p-6 border-b border-slate-700">
+        <div className="flex items-center gap-4">
+          {user.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={user.fullName}
+              className="w-16 h-16 rounded-full object-cover ring-2 ring-slate-700"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center text-xl font-semibold text-white">
+              {user.fullName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-white">{user.fullName}</h3>
+            <p className="text-sm text-slate-400">@{user.username}</p>
+            <div className="flex gap-2 mt-2">
+              <span
+                className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                  user.role === 'admin'
+                    ? 'bg-blue-500/15 text-blue-200 border border-blue-500/40'
+                    : 'bg-slate-500/15 text-slate-100 border border-slate-500/30'
+                }`}
+              >
+                {user.role === 'admin' ? 'Admin' : 'User'}
+              </span>
+              <span
+                className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                  user.isActive
+                    ? 'bg-green-500/15 text-green-200 border border-green-500/40'
+                    : 'bg-red-500/15 text-red-200 border border-red-500/40'
+                }`}
+              >
+                {user.isActive ? 'Hoạt động' : 'Bị khóa'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-                  <div>
-                    <h3 className="text-2xl font-semibold text-white">{user.fullName}</h3>
-                    <p className="text-sm text-slate-400 mt-1">{user.email}</p>
-                  </div>
+      {/* Tabs */}
+      <div className="flex border-b border-slate-700">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'text-white border-b-2 border-blue-500'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    <span
-                      className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium ${roleBadges[user.role].className}`}
-                    >
-                      {roleBadges[user.role].label}
-                    </span>
-                  </div>
-                </div>
+      {/* Content */}
+      <div className="p-6 max-h-[600px] overflow-y-auto">
+        {activeTab === 'info' && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Email</p>
+              <p className="text-sm text-white">{user.email}</p>
+            </div>
 
-                <div className="px-8 border-b border-slate-800">
-                  <div className="flex items-center gap-6">
-                    {(['details', 'friends'] as DetailTab[]).map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => setActiveTab(tab)}
-                        className={`py-4 text-sm font-semibold uppercase tracking-widest ${
-                          activeTab === tab
-                            ? 'text-white border-b-2 border-blue-500'
-                            : 'text-slate-500 hover:text-white'
-                        }`}
-                      >
-                        {tab === 'details' ? 'Chi tiết' : 'Bạn bè'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-auto p-8 space-y-6">
-                  {activeTab === 'details' ? (
-                    <>
-                      {/* Button Hoạt động */}
-                      <button
-                        type="button"
-                        onClick={() => setShowActivityModal(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900/50 hover:bg-slate-900/70 text-white transition-colors w-full sm:w-auto"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={1.5}
-                          stroke="currentColor"
-                          className="w-5 h-5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <span className="text-sm font-medium">Hoạt động</span>
-                        {loadingActivity && (
-                          <span className="text-xs text-slate-400">Đang tải...</span>
-                        )}
-                      </button>
-
-                      <div className="rounded-2xl border border-slate-800 bg-slate-900/30 p-5">
-                        <div className="grid grid-cols-1 gap-4">
-                          <div>
-                            <p className="text-xs uppercase tracking-widest text-slate-500">ID Người dùng</p>
-                            <p className="text-base text-white font-semibold mt-1">{user.userId}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-widest text-slate-500">Tên đầy đủ</p>
-                            <p className="text-base text-white font-semibold mt-1">{user.fullName}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-widest text-slate-500">Ngày tham gia</p>
-                            <p className="text-base text-white font-semibold mt-1">{formatDate(user.createdAt)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-widest text-slate-500">Ngày sinh</p>
-                            <p className="text-base text-white font-semibold mt-1">
-                              {user.dateOfBirth ? formatDate(user.dateOfBirth) : '—'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-widest text-slate-500">Giới tính</p>
-                            <p className="text-base text-white font-semibold mt-1">
-                              {user.gender === 'male'
-                                ? 'Nam'
-                                : user.gender === 'female'
-                                  ? 'Nữ'
-                                  : user.gender || '—'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs uppercase tracking-widest text-slate-500">Hoạt động gần đây</p>
-                            <p className="text-base text-white font-semibold mt-1">{lastActiveLabel}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 space-y-5">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                              <p className="text-sm text-slate-400">Thông tin liên hệ</p>
-                              <h4 className="text-lg font-semibold text-white mt-1">
-                                Tài khoản & Bảo mật
-                              </h4>
-                            </div>
-                          </div>
-                          <div className="space-y-4 text-sm text-slate-300">
-                            <div>
-                              <p className="text-xs uppercase tracking-widest text-slate-500">Email</p>
-                              <p className="text-base text-white break-all">{user.email}</p>
-                            </div>
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              <div>
-                                <p className="text-xs uppercase tracking-widest text-slate-500">
-                                  Username
-                                </p>
-                                <p className="text-base text-white break-all">@{user.username}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs uppercase tracking-widest text-slate-500">
-                                  Số điện thoại
-                                </p>
-                                <p className="text-base text-white break-all">
-                                  {user.phoneNumber || 'Chưa cập nhật'}
-                                </p>
-                              </div>
-                            </div>
-                            {user.bio && (
-                              <div>
-                                <p className="text-xs uppercase tracking-widest text-slate-500">Tiểu sử</p>
-                                <p className="text-base text-white mt-1 line-clamp-3">{user.bio}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                    </>
-                  ) : (
-                    <div>
-                      {loadingFriends ? (
-                        renderPlaceholder('Đang tải danh sách bạn bè...')
-                      ) : friends.length === 0 ? (
-                        renderPlaceholder('Người dùng chưa có bạn bè hoặc dữ liệu chưa khả dụng')
-                      ) : (
-                        <ul className="space-y-4">
-                          {friends.map((friend) => (
-                            <li
-                              key={friend.id}
-                              className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/30 p-4"
-                            >
-                              <div className="flex items-center gap-3">
-                                {friend.avatarUrl ? (
-                                  <img
-                                    src={friend.avatarUrl}
-                                    alt={friend.fullName}
-                                    className="w-10 h-10 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-xs font-semibold">
-                                    {friend.fullName.charAt(0).toUpperCase()}
-                                  </div>
-                                )}
-                                <div>
-                                  <p className="text-sm font-semibold text-white">
-                                    {friend.fullName}
-                                  </p>
-                                  <p className="text-xs text-slate-400">
-                                    {friend.bio || 'Không có tiểu sử'}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p
-                                  className={`text-xs font-medium ${
-                                    friend.friendsSince
-                                  }`}
-                                >
-                                  Ngày kết bạn: {friend.friendsSince ? formatDate(friend.friendsSince) : 'Không có ngày kết bạn'}
-                                </p>
-                                {typeof friend.mutualFriendsCount === 'number' && (
-                                  <p className="text-[11px] text-slate-500 mt-1">
-                                    {friend.mutualFriendsCount} bạn chung
-                                  </p>
-                                )}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
+            {user.phoneNumber && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Số điện thoại</p>
+                <p className="text-sm text-white">{user.phoneNumber}</p>
+              </div>
             )}
+
+            {user.bio && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Giới thiệu</p>
+                <p className="text-sm text-white">{user.bio}</p>
+              </div>
+            )}
+
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Ngày tạo</p>
+              <p className="text-sm text-white">
+                {new Date(user.createdAt).toLocaleString('vi-VN')}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'friends' && (
+          <div>
+            {loadingFriends ? (
+              <p className="text-slate-400 text-center py-4">Đang tải...</p>
+            ) : friends.length === 0 ? (
+              <p className="text-slate-400 text-center py-4">Chưa có bạn bè</p>
+            ) : (
+              <div className="space-y-3">
+                {friends.slice(0, 10).map((friend, index) => (
+                  <div
+                    key={friend.userId || `friend-${index}`}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-700/50 transition-colors"
+                  >
+                    {friend.avatarUrl ? (
+                      <img
+                        src={friend.avatarUrl}
+                        alt={friend.fullName}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-semibold text-white">
+                        {friend.fullName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white">{friend.fullName}</p>
+                      <p className="text-xs text-slate-400">@{friend.username}</p>
+                    </div>
+                  </div>
+                ))}
+                {friends.length > 10 && (
+                  <p className="text-xs text-slate-500 text-center pt-2">
+                    và {friends.length - 10} người khác...
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'activity' && (
+          <div>
+            {loadingActivity ? (
+              <p className="text-slate-400 text-center py-4">Đang tải...</p>
+            ) : !activity ? (
+              <p className="text-slate-400 text-center py-4">Chưa có hoạt động</p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm text-slate-400">
+                    {activity.activity?.length || 0} hoạt động gần đây
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="border-slate-700 text-white hover:text-white hover:bg-slate-800 text-xs"
+                    onClick={() => setShowActivityModal(true)}
+                  >
+                    Xem tất cả
+                  </Button>
+                </div>
+
+                {activity.activity && activity.activity.length > 0 ? (
+                  activity.activity.slice(0, 5).map((item: ActivityTimelineItem, idx: number) => (
+                    <div
+                      key={`activity-${item.type}-${item.id || idx}-${idx}`}
+                      onClick={() => handleActivityClick(item)}
+                      className="p-3 rounded-lg border border-slate-700 bg-slate-900/40 cursor-pointer hover:bg-slate-900/60 transition-colors"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleActivityClick(item);
+                        }
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-2" />
+                        <div className="flex-1">
+                          <p className="text-xs text-slate-400 mb-1">
+                            {item.type === 'post' && '📝 Đã đăng bài viết'}
+                            {item.type === 'story' && '📸 Đã đăng story'}
+                            {item.type === 'comment' && '💬 Đã bình luận'}
+                            {item.type === 'reaction' && '👍 Đã thả cảm xúc'}
+                          </p>
+                          <p className="text-sm text-white">
+                            {new Date(item.createdAt).toLocaleString('vi-VN')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-400 text-center py-4">Chưa có hoạt động</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Activity Modal */}
       <Modal
@@ -649,191 +506,309 @@ const buildPostItems = (postsData: Post[] = []): ActivityItem[] =>
         title="Hoạt động gần đây"
         size="xl"
       >
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3 border-b border-slate-700 pb-4">
-            {(['timeline', 'posts', 'stories', 'comments', 'reactions'] as ActivityTab[]).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActivityTab(tab)}
-                className={`text-sm font-medium px-4 py-2 rounded-full transition-colors ${
-                  activityTab === tab
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
-                }`}
+        {loadingActivity ? (
+          <p className="text-slate-400 text-center py-4">Đang tải...</p>
+        ) : !activity?.activity || activity.activity.length === 0 ? (
+          <p className="text-slate-400 text-center py-4">Chưa có hoạt động</p>
+        ) : (
+          <div className="space-y-3 max-h-[500px] overflow-y-auto">
+            {activity.activity.map((item: ActivityTimelineItem, idx: number) => (
+              <div
+                key={`modal-activity-${item.type}-${item.id || idx}-${idx}`}
+                onClick={() => handleActivityClick(item, true)}
+                className="p-4 rounded-lg border border-slate-700 bg-slate-900/40 cursor-pointer hover:bg-slate-900/60 transition-colors"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleActivityClick(item, true);
+                  }
+                }}
               >
-                {tab === 'timeline' && 'Tất cả'}
-                {tab === 'posts' && 'Bài viết'}
-                {tab === 'stories' && 'Story'}
-                {tab === 'comments' && 'Bình luận'}
-                {tab === 'reactions' && 'Cảm xúc'}
-                <span className="ml-2 text-xs bg-slate-800/50 px-2 py-0.5 rounded-full">
-                  {activityCounts[tab] ?? 0}
-                </span>
-              </button>
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-2" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-white mb-1">
+                      {item.type === 'post' && '📝 Đã đăng bài viết'}
+                      {item.type === 'story' && '📸 Đã đăng story'}
+                      {item.type === 'comment' && '💬 Đã bình luận'}
+                      {item.type === 'reaction' && '👍 Đã thả cảm xúc'}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {new Date(item.createdAt).toLocaleString('vi-VN')}
+                    </p>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-
-          <div className="max-h-[60vh] overflow-y-auto space-y-3">
-            {loadingActivity ? (
-              <div className="text-center py-8 text-slate-400">Đang tải...</div>
-            ) : activityItems[activityTab].length === 0 ? (
-              <div className="text-center py-8 text-slate-500">
-                {activityTab === 'timeline'
-                  ? 'Chưa có hoạt động nào gần đây'
-                  : activityTab === 'posts'
-                    ? 'Chưa có bài viết gần đây'
-                    : activityTab === 'stories'
-                      ? 'Chưa có story nào gần đây'
-                      : activityTab === 'comments'
-                        ? 'Chưa có bình luận nào gần đây'
-                        : 'Chưa có cảm xúc nào gần đây'}
-              </div>
-            ) : (
-              activityItems[activityTab].map((item) => (
-                <button
-                  key={`${activityTab}-${item.id}`}
-                  type="button"
-                  onClick={() => handleActivityItemClick(item)}
-                  className="w-full flex flex-col gap-2 rounded-xl border border-slate-700 bg-slate-900/60 p-4 hover:bg-slate-900/80 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-                  disabled={!item.targetType || !item.targetId}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-white line-clamp-2 flex-1">
-                      {item.title}
-                    </p>
-                    <span className={`text-[11px] px-2 py-1 rounded-full whitespace-nowrap ${item.color}`}>
-                      {item.badge}
-                    </span>
-                  </div>
-                  {item.meta && (
-                    <p className="text-xs text-slate-400">{item.meta}</p>
-                  )}
-                  <p className="text-[11px] text-slate-500">
-                    {formatDateTime(item.createdAt)}
-                  </p>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={showActivityDetailModal && !!selectedActivityItem}
-        onClose={() => {
-          setShowActivityDetailModal(false);
-          setSelectedActivityItem(null);
-          setActivityDetail(null);
-          setActivityDetailType(null);
-        }}
-        title={
-          activityDetailType === 'post'
-            ? 'Chi tiết bài viết'
-            : activityDetailType === 'story'
-              ? 'Chi tiết story'
-              : 'Chi tiết hoạt động'
-        }
-        size="lg"
-      >
-        {renderActivityDetailContent(
-          selectedActivityItem,
-          activityDetail,
-          activityDetailType,
-          loadingActivityDetail,
-          formatDateTime
         )}
       </Modal>
-    </section>
-  );
-}
 
-function renderActivityDetailContent(
-  item: ActivityItem | null,
-  detail: Post | Story | null,
-  detailType: 'post' | 'story' | null,
-  loading: boolean,
-  formatDateTime: (value?: string) => string,
-) {
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-        <svg className="animate-spin h-6 w-6 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          ></path>
-        </svg>
-        Đang tải chi tiết hoạt động...
-      </div>
-    );
-  }
+      {/* Audio element cho nhạc nền story */}
+      <audio ref={audioRef} loop style={{ display: 'none' }} />
 
-  if (!item || !item.targetType || !item.targetId) {
-    return <div className="text-center text-slate-400 py-6">Không có dữ liệu chi tiết</div>;
-  }
-
-  if (!detail || !detailType) {
-    return <div className="text-center text-slate-400 py-6">Không thể tải chi tiết hoạt động</div>;
-  }
-
-  const renderSection = (title: string, content: React.ReactNode) => (
-    <div className="space-y-2">
-      <p className="text-xs uppercase tracking-widest text-slate-500">{title}</p>
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 text-sm text-slate-200">
-        {content}
-      </div>
-    </div>
-  );
-
-  if (detailType === 'post') {
-    const post = detail as Post;
-    return (
-      <div className="space-y-5">
-        {renderSection('Nội dung bài viết', post.caption || 'Không có nội dung')}
-        {renderSection('Thông tin bài viết', (
-          <ul className="space-y-1">
-            <li>Ngày đăng: {formatDateTime(post.createdAt)}</li>
-            <li>Lần cập nhật cuối: {formatDateTime(post.updatedAt)}</li>
-            <li>Quyền riêng tư: {post.privacy_type?.toUpperCase() || 'PUBLIC'}</li>
-          </ul>
-        ))}
-        {post.urls && post.urls.length > 0 && renderSection('Media', (
-          <div className="grid grid-cols-1 gap-3">
-            {post.urls?.map((media) => (
-              <div key={media._id} className="rounded-xl border border-slate-800 overflow-hidden">
-                {media?.url?.match(/\.(mp4|mov|avi|webm)$/i) ? (
-                  <video controls className="w-full">
-                    <source src={media.url} />
-                  </video>
+      {/* Detail Modal - Post/Story */}
+      <Modal
+        isOpen={isDetailOpen}
+        onClose={handleCloseDetail}
+        title={detailType === 'post' ? 'Chi tiết bài viết' : detailType === 'story' ? 'Chi tiết Story' : 'Chi tiết'}
+        size="xl"
+      >
+        {loadingDetail ? (
+          <div className="text-center py-8 text-slate-400">Đang tải...</div>
+        ) : detailType === 'post' && selectedPost ? (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+              <p className="text-sm text-slate-400 mb-2">Người đăng</p>
+              <div className="flex items-center gap-3">
+                {typeof selectedPost.userId === 'object' && selectedPost.userId.avatarUrl ? (
+                  <img
+                    src={selectedPost.userId.avatarUrl}
+                    alt={typeof selectedPost.userId === 'object' ? selectedPost.userId.fullName : 'User'}
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-700"
+                  />
                 ) : (
-                  <img src={media.url} alt={media.title || 'Post media'} className="w-full object-cover" />
+                  <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-lg font-semibold text-white">
+                    {typeof selectedPost.userId === 'object' && selectedPost.userId?.fullName
+                      ? selectedPost.userId.fullName.charAt(0).toUpperCase()
+                      : 'U'}
+                  </div>
+                )}
+                <div>
+                  <p className="text-lg text-white font-semibold">
+                    {typeof selectedPost.userId === 'object' ? selectedPost.userId.fullName : 'Unknown'}
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    {typeof selectedPost.userId === 'object' ? `@${selectedPost.userId.username}` : ''}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-2">
+              <p className="text-sm text-slate-400">Nội dung</p>
+              <p className="text-base text-white whitespace-pre-wrap">
+                {selectedPost.caption || 'Bài viết không có nội dung'}
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+                <p className="text-sm text-slate-400">Quyền riêng tư</p>
+                <p className="text-base text-white font-semibold">
+                  {selectedPost.privacy_type?.toUpperCase() || 'PUBLIC'}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+                <p className="text-sm text-slate-400">Ngày tạo</p>
+                <p className="text-base text-white font-semibold">
+                  {new Date(selectedPost.createdAt).toLocaleString('vi-VN')}
+                </p>
+              </div>
+            </div>
+
+            {selectedPost.urls && selectedPost.urls.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-400">Media</p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {selectedPost.urls.map((media) => (
+                    <div key={media._id} className="rounded-xl border border-slate-800 overflow-hidden">
+                      {media.url.match(/\.(mp4|mov|avi|webm)$/i) ? (
+                        <video controls className="w-full">
+                          <source src={media.url} />
+                        </video>
+                      ) : (
+                        <img src={media.url} alt={media.title || 'Post media'} className="w-full object-cover" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-slate-400">Bình luận ({selectedPost.comments?.length || 0})</p>
+                {selectedPost.comments && selectedPost.comments.length > 3 && (
+                  <span className="text-xs text-slate-500">Hiển thị mới nhất</span>
                 )}
               </div>
-            ))}
+              {(!selectedPost.comments || selectedPost.comments.length === 0) ? (
+                <p className="text-sm text-slate-500">Chưa có bình luận nào cho bài viết này.</p>
+              ) : (
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
+                  {selectedPost.comments.map((comment) => (
+                    <div
+                      key={comment._id}
+                      className="rounded-xl border border-slate-800 bg-slate-900/60 p-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        {comment.userId?.avatarUrl ? (
+                          <img
+                            src={comment.userId.avatarUrl}
+                            alt={comment.userId.fullName || 'User'}
+                            className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-800"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-xs font-semibold text-white">
+                            {comment.userId?.fullName
+                              ? comment.userId.fullName.charAt(0).toUpperCase()
+                              : 'U'}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-white">
+                            {comment.userId?.fullName || 'Người dùng'}
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            {new Date(comment.createdAt).toLocaleString('vi-VN')}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-sm text-slate-200 whitespace-pre-wrap">
+                        {comment.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        ))}
-      </div>
-    );
-  }
+        ) : detailType === 'story' && selectedStory ? (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+              <p className="text-sm text-slate-400 mb-2">Người đăng</p>
+              <div className="flex items-center gap-3">
+                {typeof selectedStory.userId === 'object' && selectedStory.userId.avatarUrl ? (
+                  <img
+                    src={selectedStory.userId.avatarUrl}
+                    alt={typeof selectedStory.userId === 'object' ? selectedStory.userId.fullName : 'User'}
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-700"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-lg font-semibold text-white">
+                    {typeof selectedStory.userId === 'object' && selectedStory.userId.fullName
+                      ? selectedStory.userId.fullName.charAt(0).toUpperCase()
+                      : 'U'}
+                  </div>
+                )}
+                <div>
+                  <p className="text-lg text-white font-semibold">
+                    {typeof selectedStory.userId === 'object' ? selectedStory.userId.fullName : 'Unknown'}
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    {typeof selectedStory.userId === 'object' ? `@${selectedStory.userId.username}` : ''}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-  const story = detail as Story;
-  return (
-    <div className="space-y-5">
-      {renderSection('Tiêu đề story', story.title || 'Story không có tiêu đề')}
-      {story.mediaUrl && renderSection('Media', (
-        <img src={story.mediaUrl} alt={story.title || 'Story media'} className="w-full rounded-xl object-cover" />
-      ))}
-      {renderSection('Thông tin story', (
-        <ul className="space-y-1">
-          <li>Ngày tạo: {formatDateTime(story.createdAt)}</li>
-          <li>Loại: {story.mediaType || 'text'}</li>
-          {story.expireAt && <li>Hết hạn: {formatDateTime(story.expireAt)}</li>}
-        </ul>
-      ))}
+            {selectedStory.title && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-2">
+                <p className="text-sm text-slate-400">Tiêu đề</p>
+                <p className="text-base text-white whitespace-pre-wrap">{selectedStory.title}</p>
+              </div>
+            )}
+
+            {selectedStory.mediaUrl && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+                <p className="text-sm text-slate-400">Media</p>
+                <div className="rounded-xl overflow-hidden border border-slate-700">
+                  {selectedStory.mediaType === 'VIDEO' || selectedStory.mediaUrl.match(/\.(mp4|mov|avi|webm)$/i) ? (
+                    <video
+                      src={selectedStory.mediaUrl}
+                      controls
+                      className="w-full max-h-[500px] object-contain"
+                      autoPlay
+                      muted={!selectedStory.music}
+                    />
+                  ) : (
+                    <img
+                      src={selectedStory.mediaUrl}
+                      alt={selectedStory.title || 'Story media'}
+                      className="w-full max-h-[500px] object-contain"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {selectedStory.music && (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-slate-400">Nhạc nền</p>
+                  {selectedStory.music.preview && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (audioRef.current) {
+                            if (isPlaying) {
+                              audioRef.current.pause();
+                            } else {
+                              audioRef.current.play().catch((error) => {
+                                console.error('Lỗi phát nhạc:', error);
+                                toast.error('Không thể phát nhạc');
+                              });
+                            }
+                          }
+                        }}
+                        className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                      >
+                        {isPlaying ? '⏸ Tạm dừng' : '▶ Phát'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-4">
+                  {selectedStory.music.album?.cover && (
+                    <img
+                      src={selectedStory.music.album.cover}
+                      alt={selectedStory.music.album.title}
+                      className="w-24 h-24 rounded-lg object-cover border border-slate-700"
+                    />
+                  )}
+                  <div className="flex-1 space-y-1">
+                    <p className="text-lg font-semibold text-white">{selectedStory.music.title}</p>
+                    <p className="text-sm text-slate-400">
+                      {selectedStory.music.artist?.name || 'Unknown artist'}
+                    </p>
+                    {selectedStory.music.album && (
+                      <p className="text-xs text-slate-500">
+                        Album: {selectedStory.music.album.title}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+                <p className="text-sm text-slate-400">Quyền riêng tư</p>
+                <p className="text-base text-white font-semibold">
+                  {selectedStory.privacy_type?.toUpperCase() || 'PUBLIC'}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+                <p className="text-sm text-slate-400">Ngày tạo</p>
+                <p className="text-base text-white font-semibold">
+                  {new Date(selectedStory.createdAt).toLocaleString('vi-VN')}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+                <p className="text-sm text-slate-400">Hết hạn</p>
+                <p className="text-base text-white font-semibold">
+                  {selectedStory.expireAt ? new Date(selectedStory.expireAt).toLocaleString('vi-VN') : '-'}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-slate-400">Không có dữ liệu</div>
+        )}
+      </Modal>
     </div>
   );
 }
-
