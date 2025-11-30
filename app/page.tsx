@@ -6,23 +6,48 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useState, useEffect } from 'react';
-import type { DashboardStats } from '@/lib/types';
+import type { DashboardStats, UserGrowthData, PostStatsData } from '@/lib/types';
 import toast from 'react-hot-toast';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+
+const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'];
 
 export default function Home() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [userGrowth, setUserGrowth] = useState<UserGrowthData[]>([]);
+  const [postStats, setPostStats] = useState<PostStatsData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadDashboardStats();
+    loadDashboardData();
   }, []);
 
-  const loadDashboardStats = async () => {
+  const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const data = await api.adminGetDashboardStats();
-      setStats(data);
+      const [statsData, userGrowthData, postStatsData] = await Promise.all([
+        api.adminGetDashboardStats(),
+        api.adminGetUsersGrowth(30),
+        api.adminGetPostsStats('day', 30),
+      ]);
+      setStats(statsData);
+      setUserGrowth(userGrowthData || []);
+      setPostStats(postStatsData || []);
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
@@ -33,6 +58,29 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // Chuẩn bị dữ liệu cho biểu đồ pie chart
+  const pieChartData = stats
+    ? [
+        { name: 'Người dùng', value: stats.totalUsers },
+        { name: 'Bài viết', value: stats.totalPosts },
+        { name: 'Story', value: stats.totalStories },
+        { name: 'Bình luận', value: stats.totalComments },
+      ]
+    : [];
+
+  // Chuẩn bị dữ liệu cho biểu đồ bar chart so sánh
+  const barChartData = stats
+    ? [
+        {
+          name: 'Tổng số',
+          'Người dùng': stats.totalUsers,
+          'Bài viết': stats.totalPosts,
+          'Story': stats.totalStories,
+          'Bình luận': stats.totalComments,
+        },
+      ]
+    : [];
 
   return (
     <DashboardLayout>
@@ -161,6 +209,200 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Biểu đồ tăng trưởng người dùng */}
+        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8">
+          <h3 className="text-lg font-semibold text-white mb-6">
+            Tăng trưởng người dùng (30 ngày qua)
+          </h3>
+          {loading ? (
+            <div className="h-64 flex items-center justify-center text-slate-400">
+              Đang tải...
+            </div>
+          ) : userGrowth.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={userGrowth}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis
+                  dataKey="date"
+                  stroke="#9ca3af"
+                  style={{ fontSize: '12px' }}
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+                    return `${date.getDate()}/${date.getMonth() + 1}`;
+                  }}
+                />
+                <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
+                    border: '1px solid #475569',
+                    borderRadius: '8px',
+                    color: '#fff',
+                  }}
+                  labelFormatter={(value) => {
+                    const date = new Date(value);
+                    return `Ngày: ${date.toLocaleDateString('vi-VN')}`;
+                  }}
+                />
+                <Legend wrapperStyle={{ color: '#9ca3af' }} />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  name="Số người dùng mới"
+                  dot={{ fill: '#3b82f6', r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-64 flex items-center justify-center text-slate-400">
+              Chưa có dữ liệu
+            </div>
+          )}
+        </div>
+
+        {/* Biểu đồ tăng trưởng bài viết */}
+        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8">
+          <h3 className="text-lg font-semibold text-white mb-6">
+            Tăng trưởng bài viết (30 ngày qua)
+          </h3>
+          {loading ? (
+            <div className="h-64 flex items-center justify-center text-slate-400">
+              Đang tải...
+            </div>
+          ) : postStats.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={postStats}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis
+                  dataKey="date"
+                  stroke="#9ca3af"
+                  style={{ fontSize: '12px' }}
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+                    return `${date.getDate()}/${date.getMonth() + 1}`;
+                  }}
+                />
+                <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
+                    border: '1px solid #475569',
+                    borderRadius: '8px',
+                    color: '#fff',
+                  }}
+                  labelFormatter={(value) => {
+                    const date = new Date(value);
+                    return `Ngày: ${date.toLocaleDateString('vi-VN')}`;
+                  }}
+                />
+                <Legend wrapperStyle={{ color: '#9ca3af' }} />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  name="Số bài viết mới"
+                  dot={{ fill: '#10b981', r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-64 flex items-center justify-center text-slate-400">
+              Chưa có dữ liệu
+            </div>
+          )}
+        </div>
+
+        {/* Biểu đồ so sánh tổng số liệu */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+            <h3 className="text-lg font-semibold text-white mb-6">
+              Phân bổ tổng số liệu
+            </h3>
+            {loading ? (
+              <div className="h-64 flex items-center justify-center text-slate-400">
+                Đang tải...
+              </div>
+            ) : pieChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {pieChartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #475569',
+                      borderRadius: '8px',
+                      color: '#fff',
+                    }}
+                  />
+                  <Legend wrapperStyle={{ color: '#9ca3af' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-slate-400">
+                Chưa có dữ liệu
+              </div>
+            )}
+          </div>
+
+          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+            <h3 className="text-lg font-semibold text-white mb-6">
+              So sánh tổng số liệu
+            </h3>
+            {loading ? (
+              <div className="h-64 flex items-center justify-center text-slate-400">
+                Đang tải...
+              </div>
+            ) : barChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={barChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="name" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #475569',
+                      borderRadius: '8px',
+                      color: '#fff',
+                    }}
+                  />
+                  <Legend wrapperStyle={{ color: '#9ca3af' }} />
+                  <Bar dataKey="Người dùng" fill="#3b82f6" />
+                  <Bar dataKey="Bài viết" fill="#10b981" />
+                  <Bar dataKey="Story" fill="#8b5cf6" />
+                  <Bar dataKey="Bình luận" fill="#f59e0b" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-slate-400">
+                Chưa có dữ liệu
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Thống kê tháng */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
             <h3 className="text-lg font-semibold text-white mb-4">

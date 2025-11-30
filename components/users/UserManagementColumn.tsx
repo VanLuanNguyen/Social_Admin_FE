@@ -6,6 +6,7 @@ import type { Pagination, User } from '@/lib/types';
 import { useUsers } from '@/context/UsersContext';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 
 type StatusFilter = 'all' | 'active' | 'suspended';
@@ -35,6 +36,23 @@ export default function UserManagementColumn() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [pagination, setPagination] = useState<Pagination | null>(null);
+  
+  // Modal tạo người dùng
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    username: '',
+    password: '',
+    fullName: '',
+    phoneNumber: '',
+    bio: '',
+    avatarUrl: '',
+    dateOfBirth: '',
+    gender: '',
+    isActive: true,
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Tính toán dateFrom và dateTo dựa trên timeFilter
   const getDateRange = (): { dateFrom?: string; dateTo?: string } => {
@@ -155,6 +173,95 @@ export default function UserManagementColumn() {
     fetchUsers(page);
   };
 
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.email.trim()) {
+      errors.email = 'Email là bắt buộc';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Email không hợp lệ';
+    }
+
+    if (!formData.username.trim()) {
+      errors.username = 'Tên người dùng là bắt buộc';
+    } else if (formData.username.length < 3) {
+      errors.username = 'Tên người dùng phải có ít nhất 3 ký tự';
+    }
+
+    if (!formData.password) {
+      errors.password = 'Mật khẩu là bắt buộc';
+    } else if (formData.password.length < 6) {
+      errors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    }
+
+    if (formData.phoneNumber && !/^[0-9]{10,11}$/.test(formData.phoneNumber.replace(/\s/g, ''))) {
+      errors.phoneNumber = 'Số điện thoại không hợp lệ';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      const userData: any = {
+        email: formData.email.trim(),
+        username: formData.username.trim(),
+        password: formData.password,
+        isActive: formData.isActive,
+      };
+
+      if (formData.fullName.trim()) userData.fullName = formData.fullName.trim();
+      if (formData.phoneNumber.trim()) userData.phoneNumber = formData.phoneNumber.trim();
+      if (formData.bio.trim()) userData.bio = formData.bio.trim();
+      if (formData.avatarUrl.trim()) userData.avatarUrl = formData.avatarUrl.trim();
+      if (formData.dateOfBirth) userData.dateOfBirth = formData.dateOfBirth;
+      if (formData.gender) userData.gender = formData.gender;
+
+      await api.adminCreateUser(userData);
+      toast.success('Tạo người dùng thành công!');
+      setIsCreateModalOpen(false);
+      resetForm();
+      fetchUsers(pagination?.currentPage || 1);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể tạo người dùng';
+      toast.error(errorMessage);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      email: '',
+      username: '',
+      password: '',
+      fullName: '',
+      phoneNumber: '',
+      bio: '',
+      avatarUrl: '',
+      dateOfBirth: '',
+      gender: '',
+      isActive: true,
+    });
+    setFormErrors({});
+  };
+
+  const handleCloseModal = () => {
+    setIsCreateModalOpen(false);
+    resetForm();
+  };
+
   const selectClasses =
     'flex-1 min-w-[160px] px-4 py-2.5 text-sm bg-slate-900/60 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500';
 
@@ -163,7 +270,7 @@ export default function UserManagementColumn() {
       <div className="p-6 border-b border-slate-800 flex flex-wrap items-start justify-between gap-4">
           <h2 className="text-2xl font-semibold text-white mt-1">Quản lý người dùng</h2>
         <Button
-          onClick={() => toast.success('Tính năng thêm mới sẽ sớm khả dụng')}
+          onClick={() => setIsCreateModalOpen(true)}
           className="bg-blue-600 hover:bg-blue-500 border border-blue-400/30 shadow-lg shadow-blue-500/25"
         >
           + Thêm người dùng mới
@@ -318,16 +425,16 @@ export default function UserManagementColumn() {
                               {user.avatarUrl ? (
                                 <img
                                   src={user.avatarUrl}
-                                  alt={user.fullName}
+                                  alt={user.fullName || user.username || 'User'}
                                   className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-800"
                                 />
                               ) : (
                                 <div className="w-11 h-11 rounded-full bg-slate-800 flex items-center justify-center text-sm font-semibold">
-                                  {user.fullName.charAt(0).toUpperCase()}
+                                  {(user.fullName || user.username || 'U').charAt(0).toUpperCase()}
                                 </div>
                               )}
                               <div className="min-w-0">
-                                <p className="font-semibold text-white">{user.fullName}</p>
+                                <p className="font-semibold text-white">{user.fullName || user.username || 'Người dùng'}</p>
                                 <p className="text-xs text-slate-400 truncate">{user.email}</p>
                               </div>
                             </div>
@@ -426,6 +533,183 @@ export default function UserManagementColumn() {
           </div>
         </div>
       </div>
+
+      {/* Modal tạo người dùng */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseModal}
+        title="Thêm người dùng mới"
+        size="lg"
+      >
+        <form onSubmit={handleCreateUser} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Email <span className="text-red-400">*</span>
+              </label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+                placeholder="user@example.com"
+                error={formErrors.email}
+              />
+            </div>
+
+            {/* Username */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Tên người dùng <span className="text-red-400">*</span>
+              </label>
+              <Input
+                type="text"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+                placeholder="username123"
+                error={formErrors.username}
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Mật khẩu <span className="text-red-400">*</span>
+              </label>
+              <Input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+                placeholder="Tối thiểu 6 ký tự"
+                error={formErrors.password}
+              />
+            </div>
+
+            {/* Full Name */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Tên đầy đủ
+              </label>
+              <Input
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+                placeholder="Nguyễn Văn A"
+              />
+            </div>
+
+            {/* Phone Number */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Số điện thoại
+              </label>
+              <Input
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+                placeholder="0123456789"
+                error={formErrors.phoneNumber}
+              />
+            </div>
+
+            {/* Date of Birth */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Ngày sinh
+              </label>
+              <Input
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+              />
+            </div>
+
+            {/* Gender */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Giới tính
+              </label>
+              <select
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                className="w-full px-4 py-2 bg-slate-900/60 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Chọn giới tính</option>
+                <option value="male">Nam</option>
+                <option value="female">Nữ</option>
+                <option value="other">Khác</option>
+              </select>
+            </div>
+
+            {/* Avatar URL */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                URL Avatar
+              </label>
+              <Input
+                type="url"
+                value={formData.avatarUrl}
+                onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+                placeholder="https://example.com/avatar.jpg"
+              />
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Giới thiệu
+            </label>
+            <textarea
+              value={formData.bio}
+              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+              className="w-full px-4 py-2 bg-slate-900/60 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              placeholder="Giới thiệu về người dùng..."
+              rows={3}
+            />
+          </div>
+
+          {/* Is Active */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={formData.isActive}
+              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="isActive" className="text-sm font-medium text-slate-300">
+              Kích hoạt tài khoản ngay
+            </label>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+            <Button
+              type="button"
+              onClick={handleCloseModal}
+              variant="outline"
+              className="border-slate-700 text-white hover:bg-slate-700"
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              disabled={isCreating}
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50"
+            >
+              {isCreating ? 'Đang tạo...' : 'Tạo người dùng'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </section>
   );
 }

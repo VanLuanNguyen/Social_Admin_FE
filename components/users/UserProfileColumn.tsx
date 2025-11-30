@@ -319,7 +319,7 @@ export default function UserProfileColumn() {
             />
           ) : (
             <div className="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center text-xl font-semibold text-white">
-              {user.fullName.charAt(0).toUpperCase()}
+              {(user.fullName || user.username || 'U').charAt(0).toUpperCase()}
             </div>
           )}
           <div className="flex-1">
@@ -466,7 +466,7 @@ export default function UserProfileColumn() {
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-semibold text-white">
-                        {friend.fullName.charAt(0).toUpperCase()}
+                        {(friend.fullName || friend.username || 'U').charAt(0).toUpperCase()}
                       </div>
                     )}
                     <div className="flex-1">
@@ -618,8 +618,8 @@ export default function UserProfileColumn() {
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-lg font-semibold text-white">
-                    {typeof selectedPost.userId === 'object' && selectedPost.userId?.fullName
-                      ? selectedPost.userId.fullName.charAt(0).toUpperCase()
+                    {typeof selectedPost.userId === 'object' && selectedPost.userId
+                      ? (selectedPost.userId.fullName || selectedPost.userId.username || 'U').charAt(0).toUpperCase()
                       : 'U'}
                   </div>
                 )}
@@ -700,8 +700,8 @@ export default function UserProfileColumn() {
                           />
                         ) : (
                           <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-xs font-semibold text-white">
-                            {comment.userId?.fullName
-                              ? comment.userId.fullName.charAt(0).toUpperCase()
+                            {comment.userId
+                              ? (comment.userId.fullName || comment.userId.username || 'U').charAt(0).toUpperCase()
                               : 'U'}
                           </div>
                         )}
@@ -736,8 +736,8 @@ export default function UserProfileColumn() {
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-lg font-semibold text-white">
-                    {typeof selectedStory.userId === 'object' && selectedStory.userId.fullName
-                      ? selectedStory.userId.fullName.charAt(0).toUpperCase()
+                    {typeof selectedStory.userId === 'object' && selectedStory.userId
+                      ? (selectedStory.userId.fullName || selectedStory.userId.username || 'U').charAt(0).toUpperCase()
                       : 'U'}
                   </div>
                 )}
