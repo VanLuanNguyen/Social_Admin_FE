@@ -8,10 +8,7 @@ export default function Header() {
 
   return (
     <header className="bg-slate-800 border-b border-slate-700">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center space-x-4">
-          <h2 className="text-lg font-semibold text-white">Dashboard</h2>
-        </div>
+      <div className="flex items-center justify-end px-6 py-4">
         <div className="flex items-center space-x-4">
           {user && (
             <div className="flex items-center space-x-3">

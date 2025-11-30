@@ -8,8 +8,8 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 
-type RoleFilter = 'all' | User['role'];
 type StatusFilter = 'all' | 'active' | 'suspended';
+type TimeFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
 
 const PAGE_LIMIT = 10;
 
@@ -30,19 +30,63 @@ export default function UserManagementColumn() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [pagination, setPagination] = useState<Pagination | null>(null);
+
+  // Tính toán dateFrom và dateTo dựa trên timeFilter
+  const getDateRange = (): { dateFrom?: string; dateTo?: string } => {
+    if (timeFilter === 'custom') {
+      return {
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      };
+    }
+
+    if (timeFilter === 'all') {
+      return {};
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let startDate: Date;
+
+    switch (timeFilter) {
+      case 'today':
+        startDate = today;
+        break;
+      case 'week':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case 'month':
+        startDate = new Date(today);
+        startDate.setMonth(today.getMonth() - 1);
+        break;
+      default:
+        return {};
+    }
+
+    return {
+      dateFrom: startDate.toISOString(),
+      dateTo: now.toISOString(),
+    };
+  };
 
   const fetchUsers = async (page: number = 1) => {
     try {
       setLoading(true);
+      const { dateFrom: calculatedDateFrom, dateTo: calculatedDateTo } = getDateRange();
+      
       const response = await api.adminGetAllUsers(
         page,
         PAGE_LIMIT,
         searchQuery.trim() || undefined,
-        roleFilter !== 'all' ? roleFilter : undefined,
-        statusFilter === 'active' ? true : statusFilter === 'suspended' ? false : undefined
+        statusFilter === 'active' ? true : statusFilter === 'suspended' ? false : undefined,
+        calculatedDateFrom,
+        calculatedDateTo
       );
 
       setUsers(response?.data || []);
@@ -61,7 +105,7 @@ export default function UserManagementColumn() {
   useEffect(() => {
     fetchUsers(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roleFilter, statusFilter]);
+  }, [statusFilter, timeFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     if (users.length === 0) {
@@ -117,10 +161,7 @@ export default function UserManagementColumn() {
   return (
     <section className="rounded-3xl border border-slate-800 bg-[#0d1628] shadow-2xl shadow-black/20 flex flex-col">
       <div className="p-6 border-b border-slate-800 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-slate-400">Quản lý tất cả người dùng trong hệ thống.</p>
           <h2 className="text-2xl font-semibold text-white mt-1">Quản lý người dùng</h2>
-        </div>
         <Button
           onClick={() => toast.success('Tính năng thêm mới sẽ sớm khả dụng')}
           className="bg-blue-600 hover:bg-blue-500 border border-blue-400/30 shadow-lg shadow-blue-500/25"
@@ -161,16 +202,6 @@ export default function UserManagementColumn() {
 
         <div className="flex flex-col gap-3 md:flex-row">
           <select
-            value={roleFilter}
-            onChange={(event) => setRoleFilter(event.target.value as RoleFilter)}
-            className={selectClasses}
-          >
-            <option value="all">Vai trò: Tất cả</option>
-            <option value="admin">Admin</option>
-            <option value="user">User</option>
-          </select>
-
-          <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
             className={selectClasses}
@@ -180,12 +211,42 @@ export default function UserManagementColumn() {
             <option value="suspended">Bị cấm</option>
           </select>
 
-          <select className={`${selectClasses} md:w-48`}>
-            <option value="any">Thời gian: Tất cả</option>
+          <select
+            value={timeFilter}
+            onChange={(event) => {
+              setTimeFilter(event.target.value as TimeFilter);
+              if (event.target.value !== 'custom') {
+                setDateFrom('');
+                setDateTo('');
+              }
+            }}
+            className={selectClasses}
+          >
+            <option value="all">Thời gian: Tất cả</option>
             <option value="today">Hôm nay</option>
-            <option value="week">Tuần này</option>
-            <option value="month">Tháng này</option>
+            <option value="week">7 ngày qua</option>
+            <option value="month">30 ngày qua</option>
+            <option value="custom">Tùy chọn</option>
           </select>
+
+          {timeFilter === 'custom' && (
+            <>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className={`${selectClasses} md:w-48`}
+                placeholder="Từ ngày"
+              />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className={`${selectClasses} md:w-48`}
+                placeholder="Đến ngày"
+              />
+            </>
+          )}
         </div>
       </div>
 

@@ -145,13 +145,15 @@ export const api = {
     page: number = 1,
     limit: number = 10,
     search?: string,
-    role?: string,
     isActive?: boolean,
+    dateFrom?: string,
+    dateTo?: string,
   ): Promise<AdminUsersResponse> => {
     const params: any = { page, limit };
     if (search) params.search = search;
-    if (role) params.role = role;
     if (isActive !== undefined) params.isActive = isActive;
+    if (dateFrom) params.dateFrom = dateFrom;
+    if (dateTo) params.dateTo = dateTo;
 
     const response = await apiClient.get('/admin/users', { params });
     return response.data.data || response.data;
