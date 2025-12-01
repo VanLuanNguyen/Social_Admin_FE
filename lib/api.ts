@@ -180,6 +180,26 @@ export const api = {
     return response.data.data || response.data;
   },
 
+  adminUpdateUser: async (
+    userId: string,
+    userData: {
+      email?: string;
+      username?: string;
+      password?: string;
+      fullName?: string;
+      phoneNumber?: string;
+      bio?: string;
+      avatarUrl?: string;
+      dateOfBirth?: string;
+      gender?: string;
+      isActive?: boolean;
+      role?: 'admin' | 'user';
+    },
+  ): Promise<User> => {
+    const response = await apiClient.put(`/admin/users/${userId}`, userData);
+    return response.data.data || response.data;
+  },
+
   adminDeleteUser: async (userId: string): Promise<{ message: string }> => {
     const response = await apiClient.delete(`/admin/users/${userId}`);
     return response.data.data || response.data;

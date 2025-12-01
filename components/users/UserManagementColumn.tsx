@@ -37,13 +37,16 @@ export default function UserManagementColumn() {
   const [dateTo, setDateTo] = useState('');
   const [pagination, setPagination] = useState<Pagination | null>(null);
   
-  // Modal tạo người dùng
+  // Modal tạo / chỉnh sửa người dùng
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     username: '',
     password: '',
+    confirmPassword: '',
     fullName: '',
     phoneNumber: '',
     bio: '',
@@ -173,7 +176,32 @@ export default function UserManagementColumn() {
     fetchUsers(page);
   };
 
-  const validateForm = (): boolean => {
+  const handleToggleBanUser = async (user: User) => {
+    try {
+      const actionLabel = user.isActive ? 'cấm' : 'bỏ cấm';
+      // Xác nhận trước khi thực hiện
+      // eslint-disable-next-line no-alert
+      const confirmed = window.confirm(`Bạn có chắc chắn muốn ${actionLabel} người dùng này?`);
+      if (!confirmed) return;
+
+      await api.adminUpdateUser(user.userId, { isActive: !user.isActive });
+
+      toast.success(user.isActive ? 'Đã cấm người dùng' : 'Đã bỏ cấm người dùng');
+
+      // Cập nhật state cục bộ để phản ánh ngay
+      setUsers((prev) =>
+        prev.map((u) => (u.userId === user.userId ? { ...u, isActive: !u.isActive } : u)),
+      );
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể cập nhật trạng thái người dùng';
+      toast.error(errorMessage);
+    }
+  };
+
+  const validateForm = (mode: 'create' | 'edit' = 'create'): boolean => {
     const errors: Record<string, string> = {};
 
     if (!formData.email.trim()) {
@@ -188,10 +216,51 @@ export default function UserManagementColumn() {
       errors.username = 'Tên người dùng phải có ít nhất 3 ký tự';
     }
 
-    if (!formData.password) {
-      errors.password = 'Mật khẩu là bắt buộc';
-    } else if (formData.password.length < 6) {
-      errors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    if (mode === 'create') {
+      if (!formData.password) {
+        errors.password = 'Mật khẩu là bắt buộc';
+      } else if (formData.password.length < 6) {
+        errors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+      }
+
+      if (!formData.confirmPassword) {
+        errors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
+      } else if (formData.confirmPassword.length < 6) {
+        errors.confirmPassword = 'Mật khẩu xác nhận phải có ít nhất 6 ký tự';
+      }
+
+      if (
+        formData.password &&
+        formData.confirmPassword &&
+        formData.password !== formData.confirmPassword
+      ) {
+        errors.confirmPassword = 'Mật khẩu và xác nhận mật khẩu không khớp';
+      }
+    } else if (mode === 'edit') {
+      const hasPassword = !!formData.password;
+      const hasConfirm = !!formData.confirmPassword;
+
+      if (hasPassword || hasConfirm) {
+        if (!formData.password) {
+          errors.password = 'Vui lòng nhập mật khẩu mới';
+        } else if (formData.password.length < 6) {
+          errors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+        }
+
+        if (!formData.confirmPassword) {
+          errors.confirmPassword = 'Vui lòng xác nhận mật khẩu mới';
+        } else if (formData.confirmPassword.length < 6) {
+          errors.confirmPassword = 'Mật khẩu xác nhận phải có ít nhất 6 ký tự';
+        }
+
+        if (
+          formData.password &&
+          formData.confirmPassword &&
+          formData.password !== formData.confirmPassword
+        ) {
+          errors.confirmPassword = 'Mật khẩu và xác nhận mật khẩu không khớp';
+        }
+      }
     }
 
     if (formData.phoneNumber && !/^[0-9]{10,11}$/.test(formData.phoneNumber.replace(/\s/g, ''))) {
@@ -205,28 +274,48 @@ export default function UserManagementColumn() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    const mode: 'create' | 'edit' = isEditMode ? 'edit' : 'create';
+
+    if (!validateForm(mode)) {
       return;
     }
 
     try {
       setIsCreating(true);
-      const userData: any = {
-        email: formData.email.trim(),
-        username: formData.username.trim(),
-        password: formData.password,
-        isActive: formData.isActive,
-      };
 
+      const userData: any = {};
+
+      // Các field chung
+      if (formData.email.trim()) userData.email = formData.email.trim();
+      if (formData.username.trim()) userData.username = formData.username.trim();
       if (formData.fullName.trim()) userData.fullName = formData.fullName.trim();
       if (formData.phoneNumber.trim()) userData.phoneNumber = formData.phoneNumber.trim();
       if (formData.bio.trim()) userData.bio = formData.bio.trim();
       if (formData.avatarUrl.trim()) userData.avatarUrl = formData.avatarUrl.trim();
       if (formData.dateOfBirth) userData.dateOfBirth = formData.dateOfBirth;
       if (formData.gender) userData.gender = formData.gender;
+      userData.isActive = formData.isActive;
 
-      await api.adminCreateUser(userData);
-      toast.success('Tạo người dùng thành công!');
+      if (mode === 'create') {
+        // Trong chế độ tạo, mật khẩu + xác nhận mật khẩu luôn có (đã validate)
+        userData.password = formData.password;
+        userData.confirmPassword = formData.confirmPassword;
+        await api.adminCreateUser(userData);
+        toast.success('Tạo người dùng thành công!');
+      } else {
+        // Chỉnh sửa: chỉ gửi password nếu có nhập, và đã validate kèm confirm
+        if (formData.password) {
+          userData.password = formData.password;
+          userData.confirmPassword = formData.confirmPassword;
+        }
+
+        if (!editingUserId) {
+          throw new Error('Không xác định được người dùng cần chỉnh sửa');
+        }
+
+        await api.adminUpdateUser(editingUserId, userData);
+        toast.success('Cập nhật người dùng thành công!');
+      }
       setIsCreateModalOpen(false);
       resetForm();
       fetchUsers(pagination?.currentPage || 1);
@@ -246,6 +335,7 @@ export default function UserManagementColumn() {
       email: '',
       username: '',
       password: '',
+      confirmPassword: '',
       fullName: '',
       phoneNumber: '',
       bio: '',
@@ -255,6 +345,8 @@ export default function UserManagementColumn() {
       isActive: true,
     });
     setFormErrors({});
+    setIsEditMode(false);
+    setEditingUserId(null);
   };
 
   const handleCloseModal = () => {
@@ -270,7 +362,11 @@ export default function UserManagementColumn() {
       <div className="p-6 border-b border-slate-800 flex flex-wrap items-start justify-between gap-4">
           <h2 className="text-2xl font-semibold text-white mt-1">Quản lý người dùng</h2>
         <Button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => {
+            resetForm();
+            setIsEditMode(false);
+            setIsCreateModalOpen(true);
+          }}
           className="bg-blue-600 hover:bg-blue-500 border border-blue-400/30 shadow-lg shadow-blue-500/25"
         >
           + Thêm người dùng mới
@@ -359,14 +455,14 @@ export default function UserManagementColumn() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-auto">
-          <table className="min-w-full text-left">
+          <table className="w-full text-left">
             <thead className="text-xs uppercase tracking-widest text-slate-500 bg-slate-900/30">
               <tr>
-                <th className="px-6 py-4 font-medium">Tên người dùng</th>
-                <th className="px-6 py-4 font-medium">Vai trò</th>
-                <th className="px-7 py-4 font-medium">Trạng thái</th>
-                <th className="px-6 py-4 font-medium">Ngày tham gia</th>
-                <th className="px-6 py-4 font-medium text-right">Hành động</th>
+                <th className="w-[23%] px-6 py-4 font-medium">Tên người dùng</th>
+                <th className="w-[15%] px-6 py-4 font-medium">Vai trò</th>
+                <th className="w-[19%] px-6 py-4 font-medium">Trạng thái</th>
+                <th className="w-[23%] px-6 py-4 font-medium">Ngày tham gia</th>
+                <th className="w-[20%] px-6 py-4 font-medium">Hành động</th>
               </tr>
             </thead>
             <tbody className="text-sm text-slate-200 divide-y divide-slate-800/80">
@@ -462,30 +558,92 @@ export default function UserManagementColumn() {
                             {new Date(user.createdAt).toLocaleDateString('vi-VN')}
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <button
-                              type="button"
-                              className="text-slate-400 hover:text-white transition-colors"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                toast('Tính năng chỉnh sửa đang phát triển');
-                              }}
-                              aria-label="Chỉnh sửa người dùng"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                strokeWidth={1.5}
-                                stroke="currentColor"
-                                className="w-5 h-5"
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                type="button"
+                                className="text-slate-400 hover:text-white transition-colors"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setIsEditMode(true);
+                                  setEditingUserId(user.userId);
+                                  setFormData({
+                                    email: user.email || '',
+                                    username: user.username || '',
+                                    password: '',
+                                    confirmPassword: '',
+                                    fullName: user.fullName || '',
+                                    phoneNumber: user.phoneNumber || '',
+                                    bio: user.bio || '',
+                                    avatarUrl: user.avatarUrl || '',
+                                    dateOfBirth: user.dateOfBirth ? user.dateOfBirth.slice(0, 10) : '',
+                                    gender: user.gender || '',
+                                    isActive: user.isActive,
+                                  });
+                                  setFormErrors({});
+                                  setIsCreateModalOpen(true);
+                                }}
+                                aria-label="Chỉnh sửa người dùng"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
-                                />
-                              </svg>
-                            </button>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  strokeWidth={1.5}
+                                  stroke="currentColor"
+                                  className="w-5 h-5"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
+                                  />
+                                </svg>
+                              </button>
+
+                              <button
+                                type="button"
+                                className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                  user.isActive
+                                    ? 'border-rose-500/60 text-rose-300 hover:bg-rose-500/10'
+                                    : 'border-emerald-500/60 text-emerald-300 hover:bg-emerald-500/10'
+                                }`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleToggleBanUser(user);
+                                }}
+                                title={user.isActive ? 'Cấm người dùng' : 'Bỏ cấm người dùng'}
+                                aria-label={user.isActive ? 'Cấm người dùng' : 'Bỏ cấm người dùng'}
+                              >
+                                {user.isActive ? (
+                                  // Icon cấm (ban)
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    className="w-4 h-4"
+                                  >
+                                    <circle cx="12" cy="12" r="9" />
+                                    <line x1="7" y1="17" x2="17" y2="7" />
+                                  </svg>
+                                ) : (
+                                  // Icon bỏ cấm (unlock)
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    className="w-4 h-4"
+                                  >
+                                    <path d="M7 11V8a5 5 0 0 1 9.33-2.5" />
+                                    <rect x="5" y="11" width="14" height="9" rx="2" />
+                                    <path d="M12 15v2" />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -534,11 +692,11 @@ export default function UserManagementColumn() {
         </div>
       </div>
 
-      {/* Modal tạo người dùng */}
+      {/* Modal tạo / chỉnh sửa người dùng */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={handleCloseModal}
-        title="Thêm người dùng mới"
+        title={isEditMode ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
         size="lg"
       >
         <form onSubmit={handleCreateUser} className="space-y-4">
@@ -576,7 +734,7 @@ export default function UserManagementColumn() {
             {/* Password */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Mật khẩu <span className="text-red-400">*</span>
+                Mật khẩu{isEditMode ? '' : ' '} {!isEditMode && <span className="text-red-400">*</span>}
               </label>
               <Input
                 type="password"
@@ -585,6 +743,21 @@ export default function UserManagementColumn() {
                 className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
                 placeholder="Tối thiểu 6 ký tự"
                 error={formErrors.password}
+              />
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Xác nhận mật khẩu{isEditMode ? '' : ' '} {!isEditMode && <span className="text-red-400">*</span>}
+              </label>
+              <Input
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+                placeholder="Nhập lại mật khẩu"
+                error={formErrors.confirmPassword}
               />
             </div>
 
@@ -705,7 +878,13 @@ export default function UserManagementColumn() {
               disabled={isCreating}
               className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50"
             >
-              {isCreating ? 'Đang tạo...' : 'Tạo người dùng'}
+              {isCreating
+                ? isEditMode
+                  ? 'Đang cập nhật...'
+                  : 'Đang tạo...'
+                : isEditMode
+                  ? 'Lưu thay đổi'
+                  : 'Tạo người dùng'}
             </Button>
           </div>
         </form>

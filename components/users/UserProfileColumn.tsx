@@ -367,7 +367,7 @@ export default function UserProfileColumn() {
       </div>
 
       {/* Content */}
-      <div className="p-6 max-h-[600px] overflow-y-auto">
+      <div className="p-6 max-h-[800px] overflow-y-auto">
         {activeTab === 'info' && (
           <div className="space-y-4">
             <div>
