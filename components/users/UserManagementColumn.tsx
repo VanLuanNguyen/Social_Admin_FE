@@ -1,895 +1,115 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { api } from '@/lib/api';
-import type { Pagination, User } from '@/lib/types';
-import { useUsers } from '@/context/UsersContext';
-import Input from '@/components/ui/Input';
+import React from 'react';
 import Button from '@/components/ui/Button';
-import Modal from '@/components/ui/Modal';
-import toast from 'react-hot-toast';
-
-type StatusFilter = 'all' | 'active' | 'suspended';
-type TimeFilter = 'all' | 'today' | 'week' | 'month' | 'custom';
-
-const PAGE_LIMIT = 10;
-
-const roleConfigs: Record<User['role'], { label: string; className: string }> = {
-  admin: {
-    label: 'Admin',
-    className: 'bg-blue-500/15 text-blue-200 border border-blue-500/40',
-  },
-  user: {
-    label: 'User',
-    className: 'bg-slate-500/15 text-slate-100 border border-slate-500/30',
-  },
-};
+import { useUserManagement } from './management/hooks/useUserManagement';
+import { useUserForm } from './management/hooks/useUserForm';
+import UserFilters from './management/components/UserFilters';
+import UserTable from './management/components/UserTable';
+import PaginationControls from './management/components/PaginationControls';
+import UserFormModal from './management/components/UserFormModal';
 
 export default function UserManagementColumn() {
-  const { selectedUserId, setSelectedUserId } = useUsers();
+  const {
+    users,
+    loading,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    timeFilter,
+    setTimeFilter,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    pagination,
+    displayRange,
+    pageButtons,
+    selectedUserId,
+    setSelectedUserId,
+    handleSearch,
+    handlePageChange,
+    handleToggleBanUser,
+    fetchUsers,
+  } = useUserManagement();
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [pagination, setPagination] = useState<Pagination | null>(null);
-  
-  // Modal tạo / chỉnh sửa người dùng
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    email: '',
-    username: '',
-    password: '',
-    confirmPassword: '',
-    fullName: '',
-    phoneNumber: '',
-    bio: '',
-    avatarUrl: '',
-    dateOfBirth: '',
-    gender: '',
-    isActive: true,
+  const {
+    isCreateModalOpen,
+    isCreating,
+    isEditMode,
+    formData,
+    setFormData,
+    formErrors,
+    handleCloseModal,
+    openCreateModal,
+    openEditModal,
+    handleSubmit,
+  } = useUserForm(() => {
+    fetchUsers(pagination?.currentPage || 1);
   });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Tính toán dateFrom và dateTo dựa trên timeFilter
-  const getDateRange = (): { dateFrom?: string; dateTo?: string } => {
-    if (timeFilter === 'custom') {
-      return {
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
-      };
-    }
-
-    if (timeFilter === 'all') {
-      return {};
-    }
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    let startDate: Date;
-
-    switch (timeFilter) {
-      case 'today':
-        startDate = today;
-        break;
-      case 'week':
-        startDate = new Date(today);
-        startDate.setDate(today.getDate() - 7);
-        break;
-      case 'month':
-        startDate = new Date(today);
-        startDate.setMonth(today.getMonth() - 1);
-        break;
-      default:
-        return {};
-    }
-
-    return {
-      dateFrom: startDate.toISOString(),
-      dateTo: now.toISOString(),
-    };
-  };
-
-  const fetchUsers = async (page: number = 1) => {
-    try {
-      setLoading(true);
-      const { dateFrom: calculatedDateFrom, dateTo: calculatedDateTo } = getDateRange();
-      
-      const response = await api.adminGetAllUsers(
-        page,
-        PAGE_LIMIT,
-        searchQuery.trim() || undefined,
-        statusFilter === 'active' ? true : statusFilter === 'suspended' ? false : undefined,
-        calculatedDateFrom,
-        calculatedDateTo
-      );
-
-      setUsers(response?.data || []);
-      setPagination(response?.pagination || null);
-    } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Không thể tải danh sách người dùng';
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, timeFilter, dateFrom, dateTo]);
-
-  useEffect(() => {
-    if (users.length === 0) {
-      if (selectedUserId) {
-        setSelectedUserId(null);
-      }
-      return;
-    }
-
-    if (!selectedUserId || !users.some((user) => user.userId === selectedUserId)) {
-      setSelectedUserId(users[0].userId);
-    }
-  }, [users, selectedUserId, setSelectedUserId]);
-
-  const displayRange = useMemo(() => {
-    if (!pagination || users.length === 0) {
-      return 'Không có dữ liệu';
-    }
-
-    const start = (pagination.currentPage - 1) * pagination.itemsPerPage + 1;
-    const tentativeEnd = start + users.length - 1;
-    const total = pagination.totalItems || tentativeEnd;
-    const end = Math.min(tentativeEnd, total);
-    return `Hiển thị ${start}-${end} của ${total}`;
-  }, [pagination, users.length]);
-
-  const pageButtons = useMemo(() => {
-    if (!pagination) return [1];
-    const start = Math.max(1, pagination.currentPage - 1);
-    const end = Math.min(pagination.totalPages, pagination.currentPage + 1);
-    const pages: number[] = [];
-    for (let i = start; i <= end; i += 1) {
-      pages.push(i);
-    }
-    return pages.length > 0 ? pages : [1];
-  }, [pagination]);
-
-  const handleSearch = (event?: React.FormEvent<HTMLFormElement>) => {
-    event?.preventDefault();
-    fetchUsers(1);
-  };
-
-  const handlePageChange = (page: number) => {
-    if (!pagination || page === pagination.currentPage || page < 1 || page > pagination.totalPages) {
-      return;
-    }
-    fetchUsers(page);
-  };
-
-  const handleToggleBanUser = async (user: User) => {
-    try {
-      const actionLabel = user.isActive ? 'cấm' : 'bỏ cấm';
-      // Xác nhận trước khi thực hiện
-      // eslint-disable-next-line no-alert
-      const confirmed = window.confirm(`Bạn có chắc chắn muốn ${actionLabel} người dùng này?`);
-      if (!confirmed) return;
-
-      await api.adminUpdateUser(user.userId, { isActive: !user.isActive });
-
-      toast.success(user.isActive ? 'Đã cấm người dùng' : 'Đã bỏ cấm người dùng');
-
-      // Cập nhật state cục bộ để phản ánh ngay
-      setUsers((prev) =>
-        prev.map((u) => (u.userId === user.userId ? { ...u, isActive: !u.isActive } : u)),
-      );
-    } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Không thể cập nhật trạng thái người dùng';
-      toast.error(errorMessage);
-    }
-  };
-
-  const validateForm = (mode: 'create' | 'edit' = 'create'): boolean => {
-    const errors: Record<string, string> = {};
-
-    if (!formData.email.trim()) {
-      errors.email = 'Email là bắt buộc';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Email không hợp lệ';
-    }
-
-    if (!formData.username.trim()) {
-      errors.username = 'Tên người dùng là bắt buộc';
-    } else if (formData.username.length < 3) {
-      errors.username = 'Tên người dùng phải có ít nhất 3 ký tự';
-    }
-
-    if (mode === 'create') {
-      if (!formData.password) {
-        errors.password = 'Mật khẩu là bắt buộc';
-      } else if (formData.password.length < 6) {
-        errors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
-      }
-
-      if (!formData.confirmPassword) {
-        errors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
-      } else if (formData.confirmPassword.length < 6) {
-        errors.confirmPassword = 'Mật khẩu xác nhận phải có ít nhất 6 ký tự';
-      }
-
-      if (
-        formData.password &&
-        formData.confirmPassword &&
-        formData.password !== formData.confirmPassword
-      ) {
-        errors.confirmPassword = 'Mật khẩu và xác nhận mật khẩu không khớp';
-      }
-    } else if (mode === 'edit') {
-      const hasPassword = !!formData.password;
-      const hasConfirm = !!formData.confirmPassword;
-
-      if (hasPassword || hasConfirm) {
-        if (!formData.password) {
-          errors.password = 'Vui lòng nhập mật khẩu mới';
-        } else if (formData.password.length < 6) {
-          errors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
-        }
-
-        if (!formData.confirmPassword) {
-          errors.confirmPassword = 'Vui lòng xác nhận mật khẩu mới';
-        } else if (formData.confirmPassword.length < 6) {
-          errors.confirmPassword = 'Mật khẩu xác nhận phải có ít nhất 6 ký tự';
-        }
-
-        if (
-          formData.password &&
-          formData.confirmPassword &&
-          formData.password !== formData.confirmPassword
-        ) {
-          errors.confirmPassword = 'Mật khẩu và xác nhận mật khẩu không khớp';
-        }
-      }
-    }
-
-    if (formData.phoneNumber && !/^[0-9]{10,11}$/.test(formData.phoneNumber.replace(/\s/g, ''))) {
-      errors.phoneNumber = 'Số điện thoại không hợp lệ';
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const mode: 'create' | 'edit' = isEditMode ? 'edit' : 'create';
-
-    if (!validateForm(mode)) {
-      return;
-    }
-
-    try {
-      setIsCreating(true);
-
-      const userData: any = {};
-
-      // Các field chung
-      if (formData.email.trim()) userData.email = formData.email.trim();
-      if (formData.username.trim()) userData.username = formData.username.trim();
-      if (formData.fullName.trim()) userData.fullName = formData.fullName.trim();
-      if (formData.phoneNumber.trim()) userData.phoneNumber = formData.phoneNumber.trim();
-      if (formData.bio.trim()) userData.bio = formData.bio.trim();
-      if (formData.avatarUrl.trim()) userData.avatarUrl = formData.avatarUrl.trim();
-      if (formData.dateOfBirth) userData.dateOfBirth = formData.dateOfBirth;
-      if (formData.gender) userData.gender = formData.gender;
-      userData.isActive = formData.isActive;
-
-      if (mode === 'create') {
-        // Trong chế độ tạo, mật khẩu + xác nhận mật khẩu luôn có (đã validate)
-        userData.password = formData.password;
-        userData.confirmPassword = formData.confirmPassword;
-        await api.adminCreateUser(userData);
-        toast.success('Tạo người dùng thành công!');
-      } else {
-        // Chỉnh sửa: chỉ gửi password nếu có nhập, và đã validate kèm confirm
-        if (formData.password) {
-          userData.password = formData.password;
-          userData.confirmPassword = formData.confirmPassword;
-        }
-
-        if (!editingUserId) {
-          throw new Error('Không xác định được người dùng cần chỉnh sửa');
-        }
-
-        await api.adminUpdateUser(editingUserId, userData);
-        toast.success('Cập nhật người dùng thành công!');
-      }
-      setIsCreateModalOpen(false);
-      resetForm();
-      fetchUsers(pagination?.currentPage || 1);
-    } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Không thể tạo người dùng';
-      toast.error(errorMessage);
-    } finally {
-      setIsCreating(false);
-    }
+    await handleSubmit(pagination?.currentPage || 1);
   };
-
-  const resetForm = () => {
-    setFormData({
-      email: '',
-      username: '',
-      password: '',
-      confirmPassword: '',
-      fullName: '',
-      phoneNumber: '',
-      bio: '',
-      avatarUrl: '',
-      dateOfBirth: '',
-      gender: '',
-      isActive: true,
-    });
-    setFormErrors({});
-    setIsEditMode(false);
-    setEditingUserId(null);
-  };
-
-  const handleCloseModal = () => {
-    setIsCreateModalOpen(false);
-    resetForm();
-  };
-
-  const selectClasses =
-    'flex-1 min-w-[160px] px-4 py-2.5 text-sm bg-slate-900/60 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500';
 
   return (
     <section className="rounded-3xl border border-slate-800 bg-[#0d1628] shadow-2xl shadow-black/20 flex flex-col">
       <div className="p-6 border-b border-slate-800 flex flex-wrap items-start justify-between gap-4">
-          <h2 className="text-2xl font-semibold text-white mt-1">Quản lý người dùng</h2>
+        <h2 className="text-2xl font-semibold text-white mt-1">Quản lý người dùng</h2>
         <Button
-          onClick={() => {
-            resetForm();
-            setIsEditMode(false);
-            setIsCreateModalOpen(true);
-          }}
+          onClick={openCreateModal}
           className="bg-blue-600 hover:bg-blue-500 border border-blue-400/30 shadow-lg shadow-blue-500/25"
         >
           + Thêm người dùng mới
         </Button>
       </div>
 
-      <div className="border-b border-slate-800 p-6 space-y-4">
-        <form onSubmit={handleSearch} className="relative">
-          <Input
-            type="text"
-            placeholder="Tìm theo tên, email, ID..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 pl-11 rounded-2xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-          />
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="w-5 h-5"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <line x1="16.65" y1="16.65" x2="21" y2="21" />
-            </svg>
-          </span>
-          <button
-            type="submit"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-white bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-xl"
-          >
-            Tìm kiếm
-          </button>
-        </form>
-
-        <div className="flex flex-col gap-3 md:flex-row">
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-            className={selectClasses}
-          >
-            <option value="all">Trạng thái: Tất cả</option>
-            <option value="active">Hoạt động</option>
-            <option value="suspended">Bị cấm</option>
-          </select>
-
-          <select
-            value={timeFilter}
-            onChange={(event) => {
-              setTimeFilter(event.target.value as TimeFilter);
-              if (event.target.value !== 'custom') {
-                setDateFrom('');
-                setDateTo('');
-              }
-            }}
-            className={selectClasses}
-          >
-            <option value="all">Thời gian: Tất cả</option>
-            <option value="today">Hôm nay</option>
-            <option value="week">7 ngày qua</option>
-            <option value="month">30 ngày qua</option>
-            <option value="custom">Tùy chọn</option>
-          </select>
-
-          {timeFilter === 'custom' && (
-            <>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className={`${selectClasses} md:w-48`}
-                placeholder="Từ ngày"
-              />
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className={`${selectClasses} md:w-48`}
-                placeholder="Đến ngày"
-              />
-            </>
-          )}
-        </div>
-      </div>
+      <UserFilters
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={handleSearch}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        timeFilter={timeFilter}
+        onTimeFilterChange={setTimeFilter}
+        dateFrom={dateFrom}
+        onDateFromChange={setDateFrom}
+        dateTo={dateTo}
+        onDateToChange={setDateTo}
+      />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-auto">
-          <table className="w-full text-left">
-            <thead className="text-xs uppercase tracking-widest text-slate-500 bg-slate-900/30">
-              <tr>
-                <th className="w-[23%] px-6 py-4 font-medium">Tên người dùng</th>
-                <th className="w-[15%] px-6 py-4 font-medium">Vai trò</th>
-                <th className="w-[19%] px-6 py-4 font-medium">Trạng thái</th>
-                <th className="w-[23%] px-6 py-4 font-medium">Ngày tham gia</th>
-                <th className="w-[20%] px-6 py-4 font-medium">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm text-slate-200 divide-y divide-slate-800/80">
-              {loading
-                ? Array.from({ length: 5 }).map((_, index) => (
-                    <tr key={`skeleton-${index}`} className="animate-pulse">
-                      <td className="px-6 py-6">
-                        <div className="h-4 w-4 rounded bg-slate-800" />
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-slate-800" />
-                          <div className="space-y-2 w-full">
-                            <div className="h-3 w-32 rounded-full bg-slate-800" />
-                            <div className="h-3 w-48 rounded-full bg-slate-800" />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="h-5 w-20 rounded-full bg-slate-800" />
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="h-5 w-24 rounded-full bg-slate-800" />
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="h-3 w-20 rounded-full bg-slate-800" />
-                      </td>
-                      <td className="px-6 py-6 text-right">
-                        <div className="h-3 w-8 rounded-full bg-slate-800 ml-auto" />
-                      </td>
-                    </tr>
-                  ))
-                : users.length === 0
-                  ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-16 text-center text-slate-400">
-                        {searchQuery ? 'Không tìm thấy người dùng phù hợp' : 'Chưa có người dùng nào'}
-                      </td>
-                    </tr>
-                    )
-                  : (
-                    users.map((user) => {
-                      const isSelected = selectedUserId === user.userId;
-                      const roleInfo = roleConfigs[user.role] || roleConfigs.user;
+        <UserTable
+          users={users}
+          loading={loading}
+          searchQuery={searchQuery}
+          selectedUserId={selectedUserId}
+          onSelectUser={setSelectedUserId}
+          onEditUser={openEditModal}
+          onToggleBanUser={handleToggleBanUser}
+        />
 
-                      return (
-                        <tr
-                          key={user.userId}
-                          onClick={() => setSelectedUserId(user.userId)}
-                          className={`cursor-pointer transition-colors ${
-                            isSelected ? 'bg-blue-500/10' : 'hover:bg-slate-900/40'
-                          }`}
-                        >
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-4">
-                              {user.avatarUrl ? (
-                                <img
-                                  src={user.avatarUrl}
-                                  alt={user.fullName || user.username || 'User'}
-                                  className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-800"
-                                />
-                              ) : (
-                                <div className="w-11 h-11 rounded-full bg-slate-800 flex items-center justify-center text-sm font-semibold">
-                                  {(user.fullName || user.username || 'U').charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="font-semibold text-white">{user.fullName || user.username || 'Người dùng'}</p>
-                                <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs ${roleInfo.className}`}>
-                              {roleInfo.label}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`inline-flex items-center gap-2 text-sm ${
-                                user.isActive ? 'text-emerald-300' : 'text-rose-300'
-                              }`}
-                            >
-                              <span
-                                className={`h-2.5 w-2.5 rounded-full ${
-                                  user.isActive ? 'bg-emerald-400' : 'bg-rose-500'
-                                }`}
-                              />
-                              {user.isActive ? 'Hoạt động' : 'Bị cấm'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-slate-300">
-                            {new Date(user.createdAt).toLocaleDateString('vi-VN')}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-3">
-                              <button
-                                type="button"
-                                className="text-slate-400 hover:text-white transition-colors"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setIsEditMode(true);
-                                  setEditingUserId(user.userId);
-                                  setFormData({
-                                    email: user.email || '',
-                                    username: user.username || '',
-                                    password: '',
-                                    confirmPassword: '',
-                                    fullName: user.fullName || '',
-                                    phoneNumber: user.phoneNumber || '',
-                                    bio: user.bio || '',
-                                    avatarUrl: user.avatarUrl || '',
-                                    dateOfBirth: user.dateOfBirth ? user.dateOfBirth.slice(0, 10) : '',
-                                    gender: user.gender || '',
-                                    isActive: user.isActive,
-                                  });
-                                  setFormErrors({});
-                                  setIsCreateModalOpen(true);
-                                }}
-                                aria-label="Chỉnh sửa người dùng"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  strokeWidth={1.5}
-                                  stroke="currentColor"
-                                  className="w-5 h-5"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
-                                  />
-                                </svg>
-                              </button>
-
-                              <button
-                                type="button"
-                                className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                                  user.isActive
-                                    ? 'border-rose-500/60 text-rose-300 hover:bg-rose-500/10'
-                                    : 'border-emerald-500/60 text-emerald-300 hover:bg-emerald-500/10'
-                                }`}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleToggleBanUser(user);
-                                }}
-                                title={user.isActive ? 'Cấm người dùng' : 'Bỏ cấm người dùng'}
-                                aria-label={user.isActive ? 'Cấm người dùng' : 'Bỏ cấm người dùng'}
-                              >
-                                {user.isActive ? (
-                                  // Icon cấm (ban)
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    className="w-4 h-4"
-                                  >
-                                    <circle cx="12" cy="12" r="9" />
-                                    <line x1="7" y1="17" x2="17" y2="7" />
-                                  </svg>
-                                ) : (
-                                  // Icon bỏ cấm (unlock)
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    className="w-4 h-4"
-                                  >
-                                    <path d="M7 11V8a5 5 0 0 1 9.33-2.5" />
-                                    <rect x="5" y="11" width="14" height="9" rx="2" />
-                                    <path d="M12 15v2" />
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="p-6 border-t border-slate-800 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <p className="text-sm text-slate-400">{displayRange}</p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handlePageChange((pagination?.currentPage || 1) - 1)}
-              disabled={!pagination?.hasPrevPage || loading}
-              className="px-4 py-2 rounded-xl border border-slate-700 text-sm text-white hover:bg-slate-900 disabled:opacity-40"
-            >
-              Trước
-            </button>
-
-            {pageButtons.map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => handlePageChange(page)}
-                className={`px-4 py-2 rounded-xl text-sm ${
-                  page === pagination?.currentPage
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 border border-transparent hover:border-slate-600'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              type="button"
-              onClick={() => handlePageChange((pagination?.currentPage || 1) + 1)}
-              disabled={!pagination?.hasNextPage || loading}
-              className="px-4 py-2 rounded-xl border border-slate-700 text-sm text-white hover:bg-slate-900 disabled:opacity-40"
-            >
-              Sau
-            </button>
-          </div>
-        </div>
+        <PaginationControls
+          pagination={pagination}
+          displayRange={displayRange}
+          pageButtons={pageButtons}
+          loading={loading}
+          onPageChange={handlePageChange}
+        />
       </div>
 
-      {/* Modal tạo / chỉnh sửa người dùng */}
-      <Modal
+      <UserFormModal
         isOpen={isCreateModalOpen}
+        isEditMode={isEditMode}
+        isCreating={isCreating}
+        formData={formData}
+        formErrors={formErrors}
         onClose={handleCloseModal}
-        title={isEditMode ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
-        size="lg"
-      >
-        <form onSubmit={handleCreateUser} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Email <span className="text-red-400">*</span>
-              </label>
-              <Input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
-                placeholder="user@example.com"
-                error={formErrors.email}
-              />
-            </div>
-
-            {/* Username */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Tên người dùng <span className="text-red-400">*</span>
-              </label>
-              <Input
-                type="text"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
-                placeholder="username123"
-                error={formErrors.username}
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Mật khẩu{isEditMode ? '' : ' '} {!isEditMode && <span className="text-red-400">*</span>}
-              </label>
-              <Input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
-                placeholder="Tối thiểu 6 ký tự"
-                error={formErrors.password}
-              />
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Xác nhận mật khẩu{isEditMode ? '' : ' '} {!isEditMode && <span className="text-red-400">*</span>}
-              </label>
-              <Input
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
-                placeholder="Nhập lại mật khẩu"
-                error={formErrors.confirmPassword}
-              />
-            </div>
-
-            {/* Full Name */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Tên đầy đủ
-              </label>
-              <Input
-                type="text"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
-                placeholder="Nguyễn Văn A"
-              />
-            </div>
-
-            {/* Phone Number */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Số điện thoại
-              </label>
-              <Input
-                type="tel"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
-                placeholder="0123456789"
-                error={formErrors.phoneNumber}
-              />
-            </div>
-
-            {/* Date of Birth */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Ngày sinh
-              </label>
-              <Input
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
-              />
-            </div>
-
-            {/* Gender */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Giới tính
-              </label>
-              <select
-                value={formData.gender}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-900/60 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Chọn giới tính</option>
-                <option value="male">Nam</option>
-                <option value="female">Nữ</option>
-                <option value="other">Khác</option>
-              </select>
-            </div>
-
-            {/* Avatar URL */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                URL Avatar
-              </label>
-              <Input
-                type="url"
-                value={formData.avatarUrl}
-                onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
-                placeholder="https://example.com/avatar.jpg"
-              />
-            </div>
-          </div>
-
-          {/* Bio */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Giới thiệu
-            </label>
-            <textarea
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              className="w-full px-4 py-2 bg-slate-900/60 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              placeholder="Giới thiệu về người dùng..."
-              rows={3}
-            />
-          </div>
-
-          {/* Is Active */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={formData.isActive}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-              className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500"
-            />
-            <label htmlFor="isActive" className="text-sm font-medium text-slate-300">
-              Kích hoạt tài khoản ngay
-            </label>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
-            <Button
-              type="button"
-              onClick={handleCloseModal}
-              variant="outline"
-              className="border-slate-700 text-white hover:bg-slate-700"
-            >
-              Hủy
-            </Button>
-            <Button
-              type="submit"
-              disabled={isCreating}
-              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50"
-            >
-              {isCreating
-                ? isEditMode
-                  ? 'Đang cập nhật...'
-                  : 'Đang tạo...'
-                : isEditMode
-                  ? 'Lưu thay đổi'
-                  : 'Tạo người dùng'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        onSubmit={handleFormSubmit}
+        onFormDataChange={setFormData}
+      />
     </section>
   );
 }
-
