@@ -69,6 +69,25 @@ const navigation: NavItem[] = [
     ),
   },
   {
+    name: 'Post Reports',
+    href: '/post-reports',
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 4h16l-5 8 5 8H4l5-8-5-8z"
+        />
+      </svg>
+    ),
+  },
+  {
     name: 'Stories',
     href: '/stories',
     icon: (

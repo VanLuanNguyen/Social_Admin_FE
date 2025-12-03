@@ -18,6 +18,8 @@ import type {
   UserGrowthData,
   PostStatsData,
   Pagination,
+  AdminPostReportsResponse,
+  PostReport,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -325,5 +327,39 @@ export const api = {
       params: { groupBy, days },
     });
     return response.data.data || response.data || [];
+  },
+
+  // ===== Admin APIs - Post Reports Management =====
+  adminGetPostReports: async (
+    page: number = 1,
+    limit: number = 10,
+    status?: 'pending' | 'reviewed' | 'rejected',
+    postId?: string,
+    userId?: string,
+  ): Promise<AdminPostReportsResponse> => {
+    const params: any = { page, limit };
+    if (status) params.status = status;
+    if (postId) params.postId = postId;
+    if (userId) params.userId = userId;
+
+    const response = await apiClient.get('/admin/post-reports', { params });
+    return response.data.data || response.data;
+  },
+
+  adminGetPostReportById: async (reportId: string): Promise<PostReport> => {
+    const response = await apiClient.get(`/admin/post-reports/${reportId}`);
+    return response.data.data || response.data;
+  },
+
+  adminUpdatePostReportStatus: async (
+    reportId: string,
+    status: 'pending' | 'reviewed' | 'rejected',
+    note?: string,
+  ): Promise<{ message: string; status: string }> => {
+    const response = await apiClient.put(`/admin/post-reports/${reportId}/status`, {
+      status,
+      note,
+    });
+    return response.data.data || response.data;
   },
 };

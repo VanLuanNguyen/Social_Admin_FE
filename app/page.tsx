@@ -402,27 +402,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Thống kê tháng */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Người dùng mới trong tháng
-            </h3>
-            <p className="text-3xl font-bold text-green-400">
-              {loading ? '-' : stats?.newUsersThisMonth || 0}
-            </p>
-          </div>
-
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Bài viết mới trong tháng
-            </h3>
-            <p className="text-3xl font-bold text-blue-400">
-              {loading ? '-' : stats?.newPostsThisMonth || 0}
-            </p>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Quick Actions */}
           <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">

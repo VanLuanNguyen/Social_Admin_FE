@@ -143,6 +143,22 @@ export interface AdminCommentsResponse {
   pagination: Pagination;
 }
 
+export interface PostReport {
+  _id: string;
+  postId: Post;
+  userId: PostUserSummary | User;
+  reason: string;
+  description?: string;
+  status: 'pending' | 'reviewed' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPostReportsResponse {
+  data: PostReport[];
+  pagination: Pagination;
+}
+
 export interface DashboardStats {
   totalUsers: number;
   totalPosts: number;
