@@ -15,6 +15,12 @@ const initialFormData: UserFormData = {
   avatarUrl: '',
   dateOfBirth: '',
   gender: '',
+  coverUrl: '',
+  school: '',
+  currentCity: '',
+  hometown: '',
+  workplace: '',
+  relationshipStatus: '',
   isActive: true,
 };
 
@@ -58,6 +64,12 @@ export const useUserForm = (onSuccess: () => void) => {
       avatarUrl: user.avatarUrl || '',
       dateOfBirth: user.dateOfBirth ? user.dateOfBirth.slice(0, 10) : '',
       gender: user.gender || '',
+      coverUrl: user.coverUrl || '',
+      school: user.school || '',
+      currentCity: user.currentCity || '',
+      hometown: user.hometown || '',
+      workplace: user.workplace || '',
+      relationshipStatus: user.relationshipStatus || '',
       isActive: user.isActive,
     });
     setFormErrors({});
@@ -84,8 +96,14 @@ export const useUserForm = (onSuccess: () => void) => {
       if (formData.phoneNumber.trim()) userData.phoneNumber = formData.phoneNumber.trim();
       if (formData.bio.trim()) userData.bio = formData.bio.trim();
       if (formData.avatarUrl.trim()) userData.avatarUrl = formData.avatarUrl.trim();
+      if (formData.coverUrl.trim()) userData.coverUrl = formData.coverUrl.trim();
+      if (formData.school.trim()) userData.school = formData.school.trim();
+      if (formData.currentCity.trim()) userData.currentCity = formData.currentCity.trim();
+      if (formData.hometown.trim()) userData.hometown = formData.hometown.trim();
+      if (formData.workplace.trim()) userData.workplace = formData.workplace.trim();
       if (formData.dateOfBirth) userData.dateOfBirth = formData.dateOfBirth;
       if (formData.gender) userData.gender = formData.gender;
+      if (formData.relationshipStatus) userData.relationshipStatus = formData.relationshipStatus;
       userData.isActive = formData.isActive;
 
       if (mode === 'create') {

@@ -8,10 +8,17 @@ export interface User {
   avatarUrl?: string;
   dateOfBirth?: string;
   gender?: string;
+  coverUrl?: string;
+  school?: string;
+  currentCity?: string;
+  hometown?: string;
+  workplace?: string;
+  relationshipStatus?: string;
   email: string;
   username: string;
   isActive: boolean;
   createdAt: string;
+  updatedAt?: string;
   role: 'admin' | 'user';
 }
 

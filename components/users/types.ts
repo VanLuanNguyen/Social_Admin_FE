@@ -20,6 +20,12 @@ export interface UserFormData {
   avatarUrl: string;
   dateOfBirth: string;
   gender: string;
+  coverUrl: string;
+  school: string;
+  currentCity: string;
+  hometown: string;
+  workplace: string;
+  relationshipStatus: string;
   isActive: boolean;
 }
 

@@ -174,8 +174,14 @@ export const api = {
     phoneNumber?: string;
     bio?: string;
     avatarUrl?: string;
+    coverUrl?: string;
     dateOfBirth?: string;
     gender?: string;
+    school?: string;
+    currentCity?: string;
+    hometown?: string;
+    workplace?: string;
+    relationshipStatus?: string;
     isActive?: boolean;
   }): Promise<User> => {
     const response = await apiClient.post('/admin/users', userData);
@@ -192,8 +198,14 @@ export const api = {
       phoneNumber?: string;
       bio?: string;
       avatarUrl?: string;
+      coverUrl?: string;
       dateOfBirth?: string;
       gender?: string;
+      school?: string;
+      currentCity?: string;
+      hometown?: string;
+      workplace?: string;
+      relationshipStatus?: string;
       isActive?: boolean;
       role?: 'admin' | 'user';
     },

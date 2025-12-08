@@ -60,6 +60,60 @@ export default function UserInfoTab({ user }: UserInfoTabProps) {
         </div>
       )}
 
+      {user.school && (
+        <div>
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Trường học</p>
+          <p className="text-sm text-white">{user.school}</p>
+        </div>
+      )}
+
+      {user.currentCity && (
+        <div>
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Thành phố hiện tại</p>
+          <p className="text-sm text-white">{user.currentCity}</p>
+        </div>
+      )}
+
+      {user.hometown && (
+        <div>
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Quê quán</p>
+          <p className="text-sm text-white">{user.hometown}</p>
+        </div>
+      )}
+
+      {user.workplace && (
+        <div>
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Nơi làm việc</p>
+          <p className="text-sm text-white">{user.workplace}</p>
+        </div>
+      )}
+
+      {user.relationshipStatus && (
+        <div>
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Tình trạng quan hệ</p>
+          <p className="text-sm text-white">
+            {user.relationshipStatus === 'single' ? 'Độc thân' :
+             user.relationshipStatus === 'in_relationship' ? 'Đang hẹn hò' :
+             user.relationshipStatus === 'married' ? 'Đã kết hôn' :
+             user.relationshipStatus === 'complicated' ? 'Phức tạp' :
+             user.relationshipStatus}
+          </p>
+        </div>
+      )}
+
+      {user.coverUrl && (
+        <div>
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Ảnh bìa</p>
+          <div className="mt-2">
+            <img
+              src={user.coverUrl}
+              alt="Cover"
+              className="w-full h-32 object-cover rounded-lg border border-slate-700"
+            />
+          </div>
+        </div>
+      )}
+
       <div>
         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Vai trò</p>
         <p className="text-sm text-white">
@@ -80,6 +134,15 @@ export default function UserInfoTab({ user }: UserInfoTabProps) {
           {new Date(user.createdAt).toLocaleString('vi-VN')}
         </p>
       </div>
+
+      {user.updatedAt && (
+        <div>
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Ngày cập nhật</p>
+          <p className="text-sm text-white">
+            {new Date(user.updatedAt).toLocaleString('vi-VN')}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

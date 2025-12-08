@@ -166,6 +166,94 @@ export default function UserFormModal({
               placeholder="https://example.com/avatar.jpg"
             />
           </div>
+
+          {/* Cover URL */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              URL Ảnh bìa
+            </label>
+            <Input
+              type="url"
+              value={formData.coverUrl}
+              onChange={(e) => onFormDataChange({ ...formData, coverUrl: e.target.value })}
+              className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+              placeholder="https://example.com/cover.jpg"
+            />
+          </div>
+
+          {/* School */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Trường học
+            </label>
+            <Input
+              type="text"
+              value={formData.school}
+              onChange={(e) => onFormDataChange({ ...formData, school: e.target.value })}
+              className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+              placeholder="Tên trường học"
+            />
+          </div>
+
+          {/* Current City */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Thành phố hiện tại
+            </label>
+            <Input
+              type="text"
+              value={formData.currentCity}
+              onChange={(e) => onFormDataChange({ ...formData, currentCity: e.target.value })}
+              className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+              placeholder="Thành phố đang sống"
+            />
+          </div>
+
+          {/* Hometown */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Quê quán
+            </label>
+            <Input
+              type="text"
+              value={formData.hometown}
+              onChange={(e) => onFormDataChange({ ...formData, hometown: e.target.value })}
+              className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+              placeholder="Quê quán"
+            />
+          </div>
+
+          {/* Workplace */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Nơi làm việc
+            </label>
+            <Input
+              type="text"
+              value={formData.workplace}
+              onChange={(e) => onFormDataChange({ ...formData, workplace: e.target.value })}
+              className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500"
+              placeholder="Công ty/Tổ chức"
+            />
+          </div>
+
+          {/* Relationship Status */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Tình trạng quan hệ
+            </label>
+            <select
+              value={formData.relationshipStatus}
+              onChange={(e) => onFormDataChange({ ...formData, relationshipStatus: e.target.value })}
+              className="w-full px-4 py-2 bg-slate-900/60 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Chọn tình trạng</option>
+              <option value="single">Độc thân</option>
+              <option value="in_relationship">Đang hẹn hò</option>
+              <option value="married">Đã kết hôn</option>
+              <option value="complicated">Phức tạp</option>
+            </select>
+          </div>
         </div>
 
         {/* Bio */}
