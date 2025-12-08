@@ -138,7 +138,7 @@ export default function Sidebar() {
   const { logout } = useAuth();
 
   return (
-    <div className="flex flex-col w-64 bg-slate-900 text-white border-r border-slate-800">
+    <div className="fixed inset-y-0 left-0 flex flex-col w-64 bg-slate-900 text-white border-r border-slate-800 h-screen">
       {/* Logo Section */}
       <div className="flex items-center px-6 h-16 border-b border-slate-800">
         <div className="flex items-center space-x-3">

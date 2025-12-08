@@ -222,11 +222,9 @@ export const api = {
     page: number = 1,
     limit: number = 10,
     search?: string,
-    userId?: string,
   ): Promise<AdminPostsResponse> => {
     const params: any = { page, limit };
     if (search) params.search = search;
-    if (userId) params.userId = userId;
 
     const response = await apiClient.get('/admin/posts', { params });
     return response.data.data || response.data;
@@ -256,12 +254,10 @@ export const api = {
   adminGetAllStories: async (
     page: number = 1,
     limit: number = 10,
-    userId?: string,
     dateFrom?: string,
     dateTo?: string,
   ): Promise<AdminStoriesResponse> => {
     const params: any = { page, limit };
-    if (userId) params.userId = userId;
     if (dateFrom) params.dateFrom = dateFrom;
     if (dateTo) params.dateTo = dateTo;
 
@@ -334,13 +330,9 @@ export const api = {
     page: number = 1,
     limit: number = 10,
     status?: 'pending' | 'reviewed' | 'rejected',
-    postId?: string,
-    userId?: string,
   ): Promise<AdminPostReportsResponse> => {
     const params: any = { page, limit };
     if (status) params.status = status;
-    if (postId) params.postId = postId;
-    if (userId) params.userId = userId;
 
     const response = await apiClient.get('/admin/post-reports', { params });
     return response.data.data || response.data;

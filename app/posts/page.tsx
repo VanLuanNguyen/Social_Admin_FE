@@ -15,7 +15,6 @@ export default function PostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterUserId, setFilterUserId] = useState('');
   const [loading, setLoading] = useState(true);
 
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -29,7 +28,6 @@ export default function PostsPage() {
         page,
         PAGE_LIMIT,
         searchQuery.trim() || undefined,
-        filterUserId.trim() || undefined,
       );
       setPosts(response?.data || []);
       setPagination(response?.pagination || null);
@@ -97,12 +95,6 @@ export default function PostsPage() {
             <p className="text-sm text-slate-400">Quản lý nội dung do người dùng tạo</p>
             <h1 className="text-2xl font-semibold text-white mt-1">Quản lý bài viết</h1>
           </div>
-          <Button
-            className="bg-blue-600 border border-blue-400/40 shadow-lg shadow-blue-500/25"
-            onClick={() => toast('Tính năng tạo mới bài viết sắp ra mắt')}
-          >
-            + Tạo bài viết
-          </Button>
         </div>
 
         <form onSubmit={handleSearch} className="grid gap-4 md:grid-cols-3 bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
@@ -121,18 +113,9 @@ export default function PostsPage() {
               </svg>
             </span>
           </div>
-          <div className="flex gap-3">
-            <Input
-              type="text"
-              placeholder="Lọc theo userId"
-              value={filterUserId}
-              onChange={(e) => setFilterUserId(e.target.value)}
-              className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 rounded-2xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <Button type="submit" className="px-6 rounded-2xl">
-              Tìm
-            </Button>
-          </div>
+          <Button type="submit" className="px-6 rounded-2xl w-full md:w-auto">
+            Tìm
+          </Button>
         </form>
 
         <div className="rounded-3xl border border-slate-800 bg-[#0d1628] shadow-2xl shadow-black/20">

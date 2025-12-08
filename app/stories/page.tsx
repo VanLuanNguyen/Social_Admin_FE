@@ -14,7 +14,6 @@ const PAGE_LIMIT = 10;
 export default function StoriesPage() {
   const [stories, setStories] = useState<Story[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
-  const [filterUserId, setFilterUserId] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [loading, setLoading] = useState(true);
@@ -33,7 +32,6 @@ export default function StoriesPage() {
       const response = await api.adminGetAllStories(
         page,
         PAGE_LIMIT,
-        filterUserId.trim() || undefined,
         dateFrom.trim() || undefined,
         dateTo.trim() || undefined,
       );
@@ -194,14 +192,7 @@ export default function StoriesPage() {
         </div>
 
         {/* Search and Filter */}
-        <form onSubmit={handleSearch} className="grid gap-4 md:grid-cols-4 bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
-          <Input
-            type="text"
-            placeholder="Lọc theo User ID"
-            value={filterUserId}
-            onChange={(e) => setFilterUserId(e.target.value)}
-            className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 rounded-2xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-          />
+        <form onSubmit={handleSearch} className="grid gap-4 md:grid-cols-3 bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
           <Input
             type="date"
             placeholder="Từ ngày"
@@ -216,7 +207,7 @@ export default function StoriesPage() {
             onChange={(e) => setDateTo(e.target.value)}
             className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 rounded-2xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           />
-          <Button type="submit" className="px-6 rounded-2xl">
+          <Button type="submit" className="px-6 rounded-2xl w-full md:w-auto">
             Tìm kiếm
           </Button>
         </form>

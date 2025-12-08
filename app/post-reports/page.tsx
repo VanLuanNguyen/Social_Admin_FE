@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
@@ -29,8 +28,6 @@ export default function PostReportsPage() {
   const [loading, setLoading] = useState(true);
 
   const [filterStatus, setFilterStatus] = useState<PostReport['status'] | ''>('');
-  const [filterPostId, setFilterPostId] = useState('');
-  const [filterUserId, setFilterUserId] = useState('');
 
   const [selectedReport, setSelectedReport] = useState<PostReport | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -45,8 +42,6 @@ export default function PostReportsPage() {
         page,
         PAGE_LIMIT,
         (filterStatus || undefined) as any,
-        filterPostId.trim() || undefined,
-        filterUserId.trim() || undefined,
       );
       setReports(response?.data || []);
       setPagination(response?.pagination || null);
@@ -139,7 +134,7 @@ export default function PostReportsPage() {
 
         <form
           onSubmit={handleSearch}
-          className="grid gap-4 md:grid-cols-4 bg-slate-900/40 border border-slate-800 rounded-2xl p-4"
+          className="grid gap-4 md:grid-cols-2 bg-slate-900/40 border border-slate-800 rounded-2xl p-4"
         >
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-1">
@@ -155,30 +150,6 @@ export default function PostReportsPage() {
               <option value="reviewed">Đã xử lý</option>
               <option value="rejected">Đã từ chối</option>
             </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">
-              Lọc theo postId
-            </label>
-            <Input
-              type="text"
-              placeholder="Nhập ID bài viết"
-              value={filterPostId}
-              onChange={(e) => setFilterPostId(e.target.value)}
-              className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 rounded-2xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">
-              Lọc theo userId (người báo cáo)
-            </label>
-            <Input
-              type="text"
-              placeholder="Nhập ID người dùng"
-              value={filterUserId}
-              onChange={(e) => setFilterUserId(e.target.value)}
-              className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 rounded-2xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            />
           </div>
           <div className="flex items-end">
             <Button type="submit" className="w-full rounded-2xl">
