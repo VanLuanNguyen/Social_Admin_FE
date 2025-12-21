@@ -106,31 +106,6 @@ const navigation: NavItem[] = [
       </svg>
     ),
   },
-  {
-    name: 'Settings',
-    href: '/settings',
-    icon: (
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-        />
-      </svg>
-    ),
-  },
 ];
 
 export default function Sidebar() {
@@ -138,16 +113,20 @@ export default function Sidebar() {
   const { logout } = useAuth();
 
   return (
-    <div className="fixed inset-y-0 left-0 flex flex-col w-64 bg-slate-900 text-white border-r border-slate-800 h-screen">
+    <div className="fixed inset-y-0 left-0 flex flex-col w-64 bg-gradient-to-b from-slate-800 to-slate-900 text-white border-r border-slate-700/50 h-screen shadow-2xl">
       {/* Logo Section */}
-      <div className="flex items-center px-6 h-16 border-b border-slate-800">
+      <div className="flex items-center px-6 h-16 border-b border-slate-700/50 bg-slate-800/50">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-green-500 rounded flex items-center justify-center">
-            <span className="text-white font-bold text-lg">S</span>
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg overflow-hidden bg-white">
+            <img 
+              src="/assets/icons/logo.jpg" 
+              alt="Logo" 
+              className="w-full h-full object-contain p-1"
+            />
           </div>
           <div>
             <h1 className="text-lg font-bold text-white">Admin Panel</h1>
-            <p className="text-xs text-gray-400">Social Media Inc.</p>
+            <p className="text-xs text-slate-400">Social Media Inc.</p>
           </div>
         </div>
       </div>
@@ -160,10 +139,10 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+              className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                 isActive
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-slate-800 hover:text-white'
+                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                  : 'text-slate-300 hover:bg-slate-700/50 hover:text-white hover:translate-x-1'
               }`}
             >
               <span className="mr-3">{item.icon}</span>
@@ -174,10 +153,10 @@ export default function Sidebar() {
       </nav>
 
       {/* Log Out */}
-      <div className="px-4 py-4 border-t border-slate-800">
+      <div className="px-4 py-4 border-t border-slate-700/50 bg-slate-800/30">
         <button
           onClick={logout}
-          className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-300 rounded-lg transition-colors hover:bg-slate-800 hover:text-white"
+          className="flex items-center w-full px-4 py-3 text-sm font-medium text-slate-300 rounded-lg transition-all duration-200 hover:bg-red-600/20 hover:text-red-300 hover:translate-x-1"
         >
           <svg
             className="w-5 h-5 mr-3"

@@ -22,8 +22,8 @@ export default function UserTableRow({
   return (
     <tr
       onClick={() => onSelect(user.userId)}
-      className={`cursor-pointer transition-colors ${
-        isSelected ? 'bg-blue-500/10' : 'hover:bg-slate-900/40'
+      className={`cursor-pointer transition-all duration-200 ${
+        isSelected ? 'bg-indigo-500/10 border-l-2 border-indigo-500' : 'hover:bg-slate-800/40'
       }`}
     >
       <td className="px-6 py-4">
@@ -140,6 +140,27 @@ export default function UserTableRow({
     </tr>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

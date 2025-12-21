@@ -24,7 +24,7 @@ export default function UserTable({
   return (
     <div className="flex-1 overflow-auto">
       <table className="w-full text-left">
-        <thead className="text-xs uppercase tracking-widest text-slate-500 bg-slate-900/30">
+        <thead className="text-xs uppercase tracking-widest text-slate-400 bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-b border-slate-700/50">
           <tr>
             <th className="w-[23%] px-6 py-4 font-medium">Tên người dùng</th>
             <th className="w-[15%] px-6 py-4 font-medium">Vai trò</th>
@@ -33,7 +33,7 @@ export default function UserTable({
             <th className="w-[20%] px-6 py-4 font-medium">Hành động</th>
           </tr>
         </thead>
-        <tbody className="text-sm text-slate-200 divide-y divide-slate-800/80">
+        <tbody className="text-sm text-slate-200 divide-y divide-slate-700/30">
           {loading
             ? Array.from({ length: 5 }).map((_, index) => (
                 <tr key={`skeleton-${index}`} className="animate-pulse">
@@ -88,6 +88,27 @@ export default function UserTable({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

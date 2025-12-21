@@ -24,7 +24,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'];
+const COLORS = ['#4f46e5', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'];
 
 export default function Home() {
   const { user } = useAuth();
@@ -89,24 +89,24 @@ export default function Home() {
           <h1 className="text-3xl font-bold text-white">
             Chào mừng, {user?.fullName || 'Admin'}!
           </h1>
-          <p className="mt-2 text-gray-400">
+          <p className="mt-2 text-slate-400">
             Quản lý hệ thống Social Network từ đây.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Stats Cards */}
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">
+                <p className="text-sm font-medium text-slate-400">
                   Tổng người dùng
                 </p>
                 <p className="mt-2 text-3xl font-bold text-white">
                   {loading ? '-' : stats?.totalUsers || 0}
                 </p>
               </div>
-              <div className="p-3 bg-blue-600 rounded-full">
+              <div className="p-3 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg">
                 <svg
                   className="w-6 h-6 text-white"
                   fill="none"
@@ -124,17 +124,17 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">
+                <p className="text-sm font-medium text-slate-400">
                   Tổng bài viết
                 </p>
                 <p className="mt-2 text-3xl font-bold text-white">
                   {loading ? '-' : stats?.totalPosts || 0}
                 </p>
               </div>
-              <div className="p-3 bg-green-600 rounded-full">
+              <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
                 <svg
                   className="w-6 h-6 text-white"
                   fill="none"
@@ -152,17 +152,17 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">
+                <p className="text-sm font-medium text-slate-400">
                   Tổng story
                 </p>
                 <p className="mt-2 text-3xl font-bold text-white">
                   {loading ? '-' : stats?.totalStories || 0}
                 </p>
               </div>
-              <div className="p-3 bg-purple-600 rounded-full">
+              <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
                 <svg
                   className="w-6 h-6 text-white"
                   fill="none"
@@ -180,17 +180,17 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">
+                <p className="text-sm font-medium text-slate-400">
                   Tổng bình luận
                 </p>
                 <p className="mt-2 text-3xl font-bold text-white">
                   {loading ? '-' : stats?.totalComments || 0}
                 </p>
               </div>
-              <div className="p-3 bg-orange-600 rounded-full">
+              <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg">
                 <svg
                   className="w-6 h-6 text-white"
                   fill="none"
@@ -210,7 +210,7 @@ export default function Home() {
         </div>
 
         {/* Biểu đồ tăng trưởng người dùng */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 mb-8 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-6">
             Tăng trưởng người dùng (30 ngày qua)
           </h3>
@@ -248,10 +248,10 @@ export default function Home() {
                 <Line
                   type="monotone"
                   dataKey="count"
-                  stroke="#3b82f6"
+                  stroke="#4f46e5"
                   strokeWidth={2}
                   name="Số người dùng mới"
-                  dot={{ fill: '#3b82f6', r: 4 }}
+                  dot={{ fill: '#4f46e5', r: 4 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -263,7 +263,7 @@ export default function Home() {
         </div>
 
         {/* Biểu đồ tăng trưởng bài viết */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 mb-8 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-6">
             Tăng trưởng bài viết (30 ngày qua)
           </h3>
@@ -317,7 +317,7 @@ export default function Home() {
 
         {/* Biểu đồ so sánh tổng số liệu */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-white mb-6">
               Phân bổ tổng số liệu
             </h3>
@@ -334,7 +334,7 @@ export default function Home() {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
+                      `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
                     }
                     outerRadius={100}
                     fill="#8884d8"
@@ -365,7 +365,7 @@ export default function Home() {
             )}
           </div>
 
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-white mb-6">
               So sánh tổng số liệu
             </h3>
@@ -388,7 +388,7 @@ export default function Home() {
                     }}
                   />
                   <Legend wrapperStyle={{ color: '#9ca3af' }} />
-                  <Bar dataKey="Người dùng" fill="#3b82f6" />
+                  <Bar dataKey="Người dùng" fill="#4f46e5" />
                   <Bar dataKey="Bài viết" fill="#10b981" />
                   <Bar dataKey="Story" fill="#8b5cf6" />
                   <Bar dataKey="Bình luận" fill="#f59e0b" />
@@ -404,7 +404,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Quick Actions */}
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-white mb-4">
               Thao tác nhanh
             </h3>
@@ -418,24 +418,24 @@ export default function Home() {
           </div>
 
           {/* System Info */}
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-white mb-4">
               Thông tin hệ thống
             </h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-400">Vai trò:</span>
+                <span className="text-slate-400">Vai trò:</span>
                 <span className="font-medium text-white">
                   {user?.role === 'admin' ? 'Administrator' : 'User'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Email:</span>
+                <span className="text-slate-400">Email:</span>
                 <span className="font-medium text-white">{user?.email}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Trạng thái:</span>
-                <span className="font-medium text-green-400">
+                <span className="text-slate-400">Trạng thái:</span>
+                <span className="font-medium text-emerald-400">
                   {user?.isActive ? 'Hoạt động' : 'Không hoạt động'}
                 </span>
               </div>

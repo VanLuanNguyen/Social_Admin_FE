@@ -5,7 +5,7 @@ export const PAGE_LIMIT = 10;
 export const roleConfigs: Record<User['role'], { label: string; className: string }> = {
   admin: {
     label: 'Admin',
-    className: 'bg-blue-500/15 text-blue-200 border border-blue-500/40',
+    className: 'bg-indigo-500/15 text-indigo-200 border border-indigo-500/40',
   },
   user: {
     label: 'User',
@@ -14,7 +14,28 @@ export const roleConfigs: Record<User['role'], { label: string; className: strin
 };
 
 export const SELECT_CLASSES =
-  'flex-1 min-w-[160px] px-4 py-2.5 text-sm bg-slate-900/60 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500';
+  'flex-1 min-w-[160px] px-4 py-2.5 text-sm bg-slate-800/60 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

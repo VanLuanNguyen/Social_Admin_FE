@@ -48,11 +48,11 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white flex">
       <Sidebar />
       <div className="flex flex-col flex-1 ml-64">
         <Header />
-        <main className="flex-1 bg-slate-900 overflow-visible">
+        <main className="flex-1 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 overflow-visible">
           {children}
         </main>
       </div>

@@ -20,13 +20,13 @@ export default function Button({
 
   const variants = {
     primary:
-      'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+      'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 focus:ring-indigo-500 shadow-lg shadow-indigo-500/30',
     secondary:
-      'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
+      'bg-slate-700 text-white hover:bg-slate-600 focus:ring-slate-500',
     danger:
-      'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+      'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-700 hover:to-red-600 focus:ring-red-500 shadow-lg shadow-red-500/30',
     outline:
-      'border-2 border-slate-600 text-white hover:bg-slate-700 focus:ring-slate-500 bg-transparent',
+      'border-2 border-indigo-500/50 text-white hover:bg-indigo-500/10 focus:ring-indigo-500 bg-transparent hover:border-indigo-500',
   };
 
   const sizes = {

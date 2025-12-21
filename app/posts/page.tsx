@@ -97,14 +97,14 @@ export default function PostsPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSearch} className="grid gap-4 md:grid-cols-3 bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
+        <form onSubmit={handleSearch} className="grid gap-4 md:grid-cols-3 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-xl p-4 shadow-lg">
           <div className="relative md:col-span-2">
             <Input
               type="text"
               placeholder="Tìm theo nội dung bài viết"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 pl-11 rounded-2xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="bg-slate-800/60 border-slate-600 text-white placeholder-slate-500 pl-11 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
@@ -118,10 +118,10 @@ export default function PostsPage() {
           </Button>
         </form>
 
-        <div className="rounded-3xl border border-slate-800 bg-[#0d1628] shadow-2xl shadow-black/20">
+        <div className="rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl">
           <div className="overflow-auto">
             <table className="min-w-full text-left">
-              <thead className="text-xs uppercase tracking-widest text-slate-500 bg-slate-900/30">
+              <thead className="text-xs uppercase tracking-widest text-slate-400 bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-b border-slate-700/50">
                 <tr>
                   <th className="px-6 py-4 font-medium">Bài viết</th>
                   <th className="px-6 py-4 font-medium">Người đăng</th>
@@ -171,7 +171,7 @@ export default function PostsPage() {
                       )
                     : (
                       posts.map((post) => (
-                        <tr key={post._id} className="hover:bg-slate-900/40 transition-colors">
+                        <tr key={post._id} className="hover:bg-slate-800/40 transition-colors">
                           <td className="px-6 py-4">
                             <p className="font-semibold text-white line-clamp-2">{post.caption || 'Bài viết không có nội dung'}</p>
                           </td>
@@ -214,7 +214,7 @@ export default function PostsPage() {
                           <td className="px-6 py-4 text-right">
                             <Button
                               variant="outline"
-                              className="border-slate-700 text-white hover:text-white hover:bg-slate-800"
+                              className="border-slate-600 text-white hover:text-white hover:bg-slate-700/50"
                               onClick={() => handleOpenDetail(post._id)}
                             >
                               Xem chi tiết
@@ -238,7 +238,7 @@ export default function PostsPage() {
                 type="button"
                 onClick={() => handlePageChange((pagination?.currentPage || 1) - 1)}
                 disabled={!pagination?.hasPrevPage || loading}
-                className="px-4 py-2 rounded-xl border border-slate-700 text-sm text-white hover:bg-slate-900 disabled:opacity-40"
+                className="px-4 py-2 rounded-xl border border-slate-600 text-sm text-white hover:bg-slate-700/50 disabled:opacity-40 transition-colors"
               >
                 Trước
               </button>
@@ -260,7 +260,7 @@ export default function PostsPage() {
                 type="button"
                 onClick={() => handlePageChange((pagination?.currentPage || 1) + 1)}
                 disabled={!pagination?.hasNextPage || loading}
-                className="px-4 py-2 rounded-xl border border-slate-700 text-sm text-white hover:bg-slate-900 disabled:opacity-40"
+                className="px-4 py-2 rounded-xl border border-slate-600 text-sm text-white hover:bg-slate-700/50 disabled:opacity-40 transition-colors"
               >
                 Sau
               </button>
@@ -284,7 +284,7 @@ export default function PostsPage() {
           <div className="text-center py-8 text-slate-400">Không có dữ liệu</div>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+            <div className="rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/60 to-slate-900/60 p-4 shadow-lg">
               <p className="text-sm text-slate-400 mb-2">Người đăng</p>
               <div className="flex items-center gap-3">
                 {typeof selectedPost.userId === 'object' && selectedPost.userId.avatarUrl ? (
@@ -319,11 +319,11 @@ export default function PostsPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+              <div className="rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/60 to-slate-900/60 p-4 shadow-lg">
                 <p className="text-sm text-slate-400">Quyền riêng tư</p>
                 <p className="text-base text-white font-semibold">{selectedPost.privacy_type?.toUpperCase() || 'PUBLIC'}</p>
               </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+              <div className="rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/60 to-slate-900/60 p-4 shadow-lg">
                 <p className="text-sm text-slate-400">Ngày tạo</p>
                 <p className="text-base text-white font-semibold">
                   {new Date(selectedPost.createdAt).toLocaleString('vi-VN')}

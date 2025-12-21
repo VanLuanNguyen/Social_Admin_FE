@@ -22,7 +22,7 @@ import type {
   PostReport,
 } from './types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Tạo axios instance
 const apiClient: AxiosInstance = axios.create({

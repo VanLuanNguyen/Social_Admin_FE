@@ -55,8 +55,8 @@ export default function UserManagementColumn() {
   };
 
   return (
-    <section className="rounded-3xl border border-slate-800 bg-[#0d1628] shadow-2xl shadow-black/20 flex flex-col">
-      <div className="p-6 border-b border-slate-800 flex flex-wrap items-start justify-between gap-4">
+    <section className="rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl flex flex-col">
+      <div className="p-6 border-b border-slate-700/50 flex flex-wrap items-start justify-between gap-4">
         <h2 className="text-2xl font-semibold text-white mt-1">Quản lý người dùng</h2>
         <Button
           onClick={openCreateModal}

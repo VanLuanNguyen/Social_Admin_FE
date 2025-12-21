@@ -184,7 +184,7 @@ export default function StoriesPage() {
           </div>
           <Button
             variant="outline"
-            className="border-slate-700 text-white hover:text-white hover:bg-slate-800"
+            className="border-slate-600 text-white hover:text-white hover:bg-slate-700/50"
             onClick={() => loadStories(pagination?.currentPage || 1)}
           >
             Làm mới
@@ -192,20 +192,20 @@ export default function StoriesPage() {
         </div>
 
         {/* Search and Filter */}
-        <form onSubmit={handleSearch} className="grid gap-4 md:grid-cols-3 bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
+        <form onSubmit={handleSearch} className="grid gap-4 md:grid-cols-3 bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-slate-700/50 rounded-xl p-4 shadow-lg">
           <Input
             type="date"
             placeholder="Từ ngày"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 rounded-2xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className="bg-slate-800/60 border-slate-600 text-white placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
           <Input
             type="date"
             placeholder="Đến ngày"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="bg-slate-900/60 border-slate-700 text-white placeholder-slate-500 rounded-2xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className="bg-slate-800/60 border-slate-600 text-white placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
           <Button type="submit" className="px-6 rounded-2xl w-full md:w-auto">
             Tìm kiếm
@@ -213,10 +213,10 @@ export default function StoriesPage() {
         </form>
 
         {/* Stories Table */}
-        <div className="rounded-3xl border border-slate-800 bg-[#0d1628] shadow-2xl shadow-black/20">
+        <div className="rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl">
           <div className="overflow-auto">
             <table className="min-w-full text-left">
-              <thead className="text-xs uppercase tracking-widest text-slate-500 bg-slate-900/30">
+              <thead className="text-xs uppercase tracking-widest text-slate-400 bg-gradient-to-r from-slate-800/50 to-slate-900/50 border-b border-slate-700/50">
                 <tr>
                   <th className="px-6 py-4 font-medium">Người đăng</th>
                   <th className="px-6 py-4 font-medium">Media</th>
@@ -272,7 +272,7 @@ export default function StoriesPage() {
                       stories.map((story) => {
                         const storyId = typeof story._id === 'string' ? story._id : String(story._id);
                         return (
-                        <tr key={storyId} className="hover:bg-slate-900/40 transition-colors">
+                        <tr key={storyId} className="hover:bg-slate-800/40 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               {typeof story.userId === 'object' && story.userId.avatarUrl ? (
@@ -300,7 +300,7 @@ export default function StoriesPage() {
                           </td>
                           <td className="px-6 py-4">
                             {story.mediaUrl ? (
-                              <div className="w-16 h-16 rounded-lg overflow-hidden border border-slate-700">
+                              <div className="w-16 h-16 rounded-lg overflow-hidden border border-slate-600">
                                 {story.mediaType === 'VIDEO' || story.mediaUrl.match(/\.(mp4|mov|avi|webm)$/i) ? (
                                   <video src={story.mediaUrl} className="w-full h-full object-cover" muted />
                                 ) : (
@@ -324,7 +324,7 @@ export default function StoriesPage() {
                             )}
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-xs px-3 py-1 rounded-full border border-slate-700 text-slate-300">
+                            <span className="text-xs px-3 py-1 rounded-full border border-slate-600 text-slate-300">
                               {story.privacy_type?.toUpperCase() || 'PUBLIC'}
                             </span>
                           </td>
@@ -337,7 +337,7 @@ export default function StoriesPage() {
                           <td className="px-6 py-4 text-right">
                             <Button
                               variant="outline"
-                              className="border-slate-700 text-white hover:text-white hover:bg-slate-800"
+                              className="border-slate-600 text-white hover:text-white hover:bg-slate-700/50"
                               onClick={() => handleOpenDetail(storyId)}
                             >
                               Xem chi tiết
@@ -362,7 +362,7 @@ export default function StoriesPage() {
                 type="button"
                 onClick={() => handlePageChange((pagination?.currentPage || 1) - 1)}
                 disabled={!pagination?.hasPrevPage || loading}
-                className="px-4 py-2 rounded-xl border border-slate-700 text-sm text-white hover:bg-slate-900 disabled:opacity-40"
+                className="px-4 py-2 rounded-xl border border-slate-600 text-sm text-white hover:bg-slate-700/50 disabled:opacity-40 transition-colors"
               >
                 Trước
               </button>
@@ -384,7 +384,7 @@ export default function StoriesPage() {
                 type="button"
                 onClick={() => handlePageChange((pagination?.currentPage || 1) + 1)}
                 disabled={!pagination?.hasNextPage || loading}
-                className="px-4 py-2 rounded-xl border border-slate-700 text-sm text-white hover:bg-slate-900 disabled:opacity-40"
+                className="px-4 py-2 rounded-xl border border-slate-600 text-sm text-white hover:bg-slate-700/50 disabled:opacity-40 transition-colors"
               >
                 Sau
               </button>
@@ -409,7 +409,7 @@ export default function StoriesPage() {
           <div className="text-center py-8 text-slate-400">Không có dữ liệu</div>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+            <div className="rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/60 to-slate-900/60 p-4 shadow-lg">
               <p className="text-sm text-slate-400 mb-2">Người đăng</p>
               <div className="flex items-center gap-3">
                 {typeof selectedStory.userId === 'object' && selectedStory.userId.avatarUrl ? (
@@ -446,7 +446,7 @@ export default function StoriesPage() {
             {selectedStory.mediaUrl && (
               <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
                 <p className="text-sm text-slate-400">Media</p>
-                <div className="rounded-xl overflow-hidden border border-slate-700">
+                <div className="rounded-xl overflow-hidden border border-slate-600">
                   {selectedStory.mediaType === 'VIDEO' || selectedStory.mediaUrl.match(/\.(mp4|mov|avi|webm)$/i) ? (
                     <video
                       src={selectedStory.mediaUrl}
@@ -497,7 +497,7 @@ export default function StoriesPage() {
                     <img
                       src={selectedStory.music.album.cover}
                       alt={selectedStory.music.album.title}
-                      className="w-24 h-24 rounded-lg object-cover border border-slate-700"
+                      className="w-24 h-24 rounded-lg object-cover border border-slate-600"
                     />
                   )}
                   <div className="flex-1 space-y-1">
@@ -516,19 +516,19 @@ export default function StoriesPage() {
             )}
 
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+              <div className="rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/60 to-slate-900/60 p-4 shadow-lg">
                 <p className="text-sm text-slate-400">Quyền riêng tư</p>
                 <p className="text-base text-white font-semibold">
                   {selectedStory.privacy_type?.toUpperCase() || 'PUBLIC'}
                 </p>
               </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+              <div className="rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/60 to-slate-900/60 p-4 shadow-lg">
                 <p className="text-sm text-slate-400">Ngày tạo</p>
                 <p className="text-base text-white font-semibold">
                   {new Date(selectedStory.createdAt).toLocaleString('vi-VN')}
                 </p>
               </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+              <div className="rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/60 to-slate-900/60 p-4 shadow-lg">
                 <p className="text-sm text-slate-400">Hết hạn</p>
                 <p className="text-base text-white font-semibold">
                   {selectedStory.expireAt ? new Date(selectedStory.expireAt).toLocaleString('vi-VN') : '-'}
