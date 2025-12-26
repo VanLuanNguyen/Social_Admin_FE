@@ -366,4 +366,17 @@ export const api = {
     });
     return response.data.data || response.data;
   },
+
+  adminBulkUpdatePostReportStatus: async (
+    reportIds: string[],
+    status: 'pending' | 'reviewed' | 'rejected',
+    note?: string,
+  ): Promise<{ message: string; updatedCount: number; matchedCount: number }> => {
+    const response = await apiClient.put('/admin/post-reports/bulk-update', {
+      reportIds,
+      status,
+      note,
+    });
+    return response.data.data || response.data;
+  },
 };

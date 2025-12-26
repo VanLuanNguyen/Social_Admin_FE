@@ -159,10 +159,44 @@ export interface PostReport {
   status: 'pending' | 'reviewed' | 'rejected';
   createdAt: string;
   updatedAt: string;
+  reportCounts?: {
+    total: number;
+    pending: number;
+    reviewed: number;
+    rejected: number;
+  };
+}
+
+export interface PostReporter {
+  _id: string;
+  userId: {
+    _id: string;
+    fullName: string;
+    username: string;
+    avatarUrl?: string;
+    email?: string;
+  };
+  reason: string;
+  description?: string;
+  status: 'pending' | 'reviewed' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupedPostReport {
+  postId: Post;
+  reporters: PostReporter[];
+  reportCounts: {
+    total: number;
+    pending: number;
+    reviewed: number;
+    rejected: number;
+  };
+  latestReportDate: string;
 }
 
 export interface AdminPostReportsResponse {
-  data: PostReport[];
+  data: GroupedPostReport[];
   pagination: Pagination;
 }
 
