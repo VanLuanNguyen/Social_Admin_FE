@@ -19,11 +19,10 @@ export default function UserTabs({ activeTab, onTabChange }: UserTabsProps) {
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-            activeTab === tab.id
+          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === tab.id
               ? 'text-white border-b-2 border-blue-500'
               : 'text-slate-400 hover:text-white'
-          }`}
+            }`}
         >
           {tab.label}
         </button>

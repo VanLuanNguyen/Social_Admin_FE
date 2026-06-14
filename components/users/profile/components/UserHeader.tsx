@@ -18,7 +18,7 @@ export default function UserHeader({ user }: UserHeaderProps) {
           />
         </div>
       )}
-      
+
       <div className="p-6">
         <div className="flex items-start gap-4">
           {/* Avatar */}
@@ -35,7 +35,7 @@ export default function UserHeader({ user }: UserHeaderProps) {
               </div>
             )}
           </div>
-          
+
           <div className="flex-1 mt-2">
             <h3 className="text-xl font-semibold text-white">{user.fullName || user.username}</h3>
             <p className="text-sm text-slate-400">@{user.username}</p>
@@ -44,22 +44,20 @@ export default function UserHeader({ user }: UserHeaderProps) {
             )}
             <div className="flex gap-2 mt-3">
               <span
-                className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                  user.role === 'admin'
+                className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${user.role === 'admin'
                     ? 'bg-blue-500/15 text-blue-200 border border-blue-500/40'
                     : 'bg-slate-500/15 text-slate-100 border border-slate-500/30'
-                }`}
+                  }`}
               >
                 {user.role === 'admin' ? 'Admin' : 'User'}
               </span>
               <span
-                className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                  user.isActive
+                className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${user.isActive
                     ? 'bg-green-500/15 text-green-200 border border-green-500/40'
                     : 'bg-red-500/15 text-red-200 border border-red-500/40'
-                }`}
+                  }`}
               >
-                {user.isActive ? 'Hoạt động' : 'Bị khóa'}
+                {user.isActive ? 'Đã kích hoạt' : 'Bị khóa'}
               </span>
             </div>
           </div>

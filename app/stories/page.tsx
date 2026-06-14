@@ -64,23 +64,12 @@ export default function StoriesPage() {
     loadStories(page);
   };
 
-  const handleOpenDetail = async (storyId: string | any) => {
+  const handleOpenDetail = async (storyId: string) => {
     // Đảm bảo storyId là string (xử lý cả ObjectId và string)
-    let storyIdString: string;
-    if (typeof storyId === 'string') {
-      storyIdString = storyId;
-    } else if (storyId?.toString) {
-      storyIdString = storyId.toString();
-    } else if (storyId?._id) {
-      storyIdString = typeof storyId._id === 'string' ? storyId._id : storyId._id.toString();
-    } else {
-      storyIdString = String(storyId);
-    }
-    
     setIsDetailOpen(true);
     setLoadingDetail(true);
     try {
-      const detail = await api.adminGetStoryById(storyIdString);
+      const detail = await api.adminGetStoryById(storyId);
       setSelectedStory(detail);
     } catch (error: any) {
       const errorMessage =

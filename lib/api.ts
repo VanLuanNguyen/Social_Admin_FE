@@ -20,6 +20,8 @@ import type {
   Pagination,
   AdminPostReportsResponse,
   PostReport,
+  AdminUserReportsResponse,
+  UserReport,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -207,6 +209,7 @@ export const api = {
       workplace?: string;
       relationshipStatus?: string;
       isActive?: boolean;
+      isBan?: boolean;
       role?: 'admin' | 'user';
     },
   ): Promise<User> => {
@@ -379,4 +382,48 @@ export const api = {
     });
     return response.data.data || response.data;
   },
+
+  // ===== Admin APIs - User Reports Management =====
+  adminGetUserReports: async (
+    page: number = 1,
+    limit: number = 10,
+    status?: 'pending' | 'reviewed' | 'rejected',
+  ): Promise<AdminUserReportsResponse> => {
+    const params: any = { page, limit };
+    if (status) params.status = status;
+
+    const response = await apiClient.get('/admin/user-reports', { params });
+    return response.data.data || response.data;
+  },
+
+  adminGetUserReportById: async (reportId: string): Promise<UserReport> => {
+    const response = await apiClient.get(`/admin/user-reports/${reportId}`);
+    return response.data.data || response.data;
+  },
+
+  adminUpdateUserReportStatus: async (
+    reportId: string,
+    status: 'pending' | 'reviewed' | 'rejected',
+    note?: string,
+  ): Promise<{ message: string; status: string }> => {
+    const response = await apiClient.put(`/admin/user-reports/${reportId}/status`, {
+      status,
+      note,
+    });
+    return response.data.data || response.data;
+  },
+
+  adminBulkUpdateUserReportStatus: async (
+    reportIds: string[],
+    status: 'pending' | 'reviewed' | 'rejected',
+    note?: string,
+  ): Promise<{ message: string; updatedCount: number; matchedCount: number }> => {
+    const response = await apiClient.put('/admin/user-reports/bulk-update', {
+      reportIds,
+      status,
+      note,
+    });
+    return response.data.data || response.data;
+  },
 };
+

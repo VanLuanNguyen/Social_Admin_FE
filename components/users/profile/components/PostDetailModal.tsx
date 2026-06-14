@@ -139,3 +139,13 @@ export default function PostDetailModal({ isOpen, onClose, post, loading }: Post
   );
 }
 
+
+
+
+
+
+
+
+
+
+

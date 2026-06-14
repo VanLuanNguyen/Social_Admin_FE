@@ -105,17 +105,17 @@ export const useUserManagement = () => {
 
   const handleToggleBanUser = async (user: User) => {
     try {
-      const actionLabel = user.isActive ? 'cấm' : 'bỏ cấm';
+      const actionLabel = user.isBan ? 'bỏ cấm' : 'cấm';
       // eslint-disable-next-line no-alert
       const confirmed = window.confirm(`Bạn có chắc chắn muốn ${actionLabel} người dùng này?`);
       if (!confirmed) return;
 
-      await api.adminUpdateUser(user.userId, { isActive: !user.isActive });
+      await api.adminUpdateUser(user.userId, { isBan: !user.isBan });
 
-      toast.success(user.isActive ? 'Đã cấm người dùng' : 'Đã bỏ cấm người dùng');
+      toast.success(user.isBan ? 'Đã bỏ cấm người dùng' : 'Đã cấm người dùng');
 
       setUsers((prev) =>
-        prev.map((u) => (u.userId === user.userId ? { ...u, isActive: !u.isActive } : u))
+        prev.map((u) => (u.userId === user.userId ? { ...u, isBan: !u.isBan } : u))
       );
     } catch (error: any) {
       const errorMessage =
@@ -150,4 +150,14 @@ export const useUserManagement = () => {
     fetchUsers,
   };
 };
+
+
+
+
+
+
+
+
+
+
 

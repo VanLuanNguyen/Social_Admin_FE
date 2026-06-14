@@ -93,10 +93,10 @@ export default function UserInfoTab({ user }: UserInfoTabProps) {
           <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Tình trạng quan hệ</p>
           <p className="text-sm text-white">
             {user.relationshipStatus === 'single' ? 'Độc thân' :
-             user.relationshipStatus === 'in_relationship' ? 'Đang hẹn hò' :
-             user.relationshipStatus === 'married' ? 'Đã kết hôn' :
-             user.relationshipStatus === 'complicated' ? 'Phức tạp' :
-             user.relationshipStatus}
+              user.relationshipStatus === 'in_relationship' ? 'Đang hẹn hò' :
+                user.relationshipStatus === 'married' ? 'Đã kết hôn' :
+                  user.relationshipStatus === 'complicated' ? 'Phức tạp' :
+                    user.relationshipStatus}
           </p>
         </div>
       )}
@@ -124,7 +124,7 @@ export default function UserInfoTab({ user }: UserInfoTabProps) {
       <div>
         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Trạng thái</p>
         <p className="text-sm text-white">
-          {user.isActive ? 'Đang hoạt động' : 'Đã bị khóa'}
+          {user.isBan ? 'Đã bị khóa' : 'Đang hoạt động'}
         </p>
       </div>
 

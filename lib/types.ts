@@ -17,6 +17,7 @@ export interface User {
   email: string;
   username: string;
   isActive: boolean;
+  isBan: boolean;
   createdAt: string;
   updatedAt?: string;
   role: 'admin' | 'user';
@@ -199,6 +200,59 @@ export interface AdminPostReportsResponse {
   data: GroupedPostReport[];
   pagination: Pagination;
 }
+
+export interface UserReporter {
+  _id: string;
+  userId: {
+    _id: string;
+    fullName: string;
+    username: string;
+    avatarUrl?: string;
+    email?: string;
+  };
+  reason: string;
+  description?: string;
+  status: 'pending' | 'reviewed' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupedUserReport {
+  reportedUser: {
+    _id: string;
+    fullName: string;
+    username: string;
+    avatarUrl?: string;
+    email: string;
+    isActive: boolean;
+    role: 'admin' | 'user';
+  };
+  reporters: UserReporter[];
+  reportCounts: {
+    total: number;
+    pending: number;
+    reviewed: number;
+    rejected: number;
+  };
+  latestReportDate: string;
+}
+
+export interface AdminUserReportsResponse {
+  data: GroupedUserReport[];
+  pagination: Pagination;
+}
+
+export interface UserReport {
+  _id: string;
+  reportedUserId: User;
+  reporterId: User;
+  reason: string;
+  description?: string;
+  status: 'pending' | 'reviewed' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 export interface DashboardStats {
   totalUsers: number;

@@ -10,7 +10,7 @@ interface StoryDetailModalProps {
   loading: boolean;
   isPlaying: boolean;
   onTogglePlay: () => void;
-  audioRef: React.RefObject<HTMLAudioElement>;
+  audioRef: React.RefObject<HTMLAudioElement | null>;
 }
 
 export default function StoryDetailModal({
@@ -162,4 +162,14 @@ export default function StoryDetailModal({
     </Modal>
   );
 }
+
+
+
+
+
+
+
+
+
+
 

@@ -22,9 +22,8 @@ export default function UserTableRow({
   return (
     <tr
       onClick={() => onSelect(user.userId)}
-      className={`cursor-pointer transition-all duration-200 ${
-        isSelected ? 'bg-indigo-500/10 border-l-2 border-indigo-500' : 'hover:bg-slate-800/40'
-      }`}
+      className={`cursor-pointer transition-all duration-200 ${isSelected ? 'bg-indigo-500/10 border-l-2 border-indigo-500' : 'hover:bg-slate-800/40'
+        }`}
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-4">
@@ -52,16 +51,14 @@ export default function UserTableRow({
       </td>
       <td className="px-6 py-4">
         <span
-          className={`inline-flex items-center gap-2 text-sm ${
-            user.isActive ? 'text-emerald-300' : 'text-rose-300'
-          }`}
+          className={`inline-flex items-center gap-2 text-sm ${user.isBan ? 'text-rose-300' : 'text-emerald-300'
+            }`}
         >
           <span
-            className={`h-2.5 w-2.5 rounded-full ${
-              user.isActive ? 'bg-emerald-400' : 'bg-rose-500'
-            }`}
+            className={`h-2.5 w-2.5 rounded-full ${user.isBan ? 'bg-rose-500' : 'bg-emerald-400'
+              }`}
           />
-          {user.isActive ? 'Hoạt động' : 'Bị cấm'}
+          {user.isBan ? 'Bị cấm' : 'Hoạt động'}
         </span>
       </td>
       <td className="px-6 py-4 text-slate-300">
@@ -96,31 +93,18 @@ export default function UserTableRow({
 
           <button
             type="button"
-            className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              user.isActive
-                ? 'border-rose-500/60 text-rose-300 hover:bg-rose-500/10'
-                : 'border-emerald-500/60 text-emerald-300 hover:bg-emerald-500/10'
-            }`}
+            className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${user.isBan
+              ? 'border-emerald-500/60 text-emerald-300 hover:bg-emerald-500/10'
+              : 'border-rose-500/60 text-rose-300 hover:bg-rose-500/10'
+              }`}
             onClick={(event) => {
               event.stopPropagation();
               onToggleBan(user);
             }}
-            title={user.isActive ? 'Cấm người dùng' : 'Bỏ cấm người dùng'}
-            aria-label={user.isActive ? 'Cấm người dùng' : 'Bỏ cấm người dùng'}
+            title={user.isBan ? 'Bỏ cấm người dùng' : 'Cấm người dùng'}
+            aria-label={user.isBan ? 'Bỏ cấm người dùng' : 'Cấm người dùng'}
           >
-            {user.isActive ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="w-4 h-4"
-              >
-                <circle cx="12" cy="12" r="9" />
-                <line x1="7" y1="17" x2="17" y2="7" />
-              </svg>
-            ) : (
+            {user.isBan ? (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -132,6 +116,18 @@ export default function UserTableRow({
                 <path d="M7 11V8a5 5 0 0 1 9.33-2.5" />
                 <rect x="5" y="11" width="14" height="9" rx="2" />
                 <path d="M12 15v2" />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="w-4 h-4"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <line x1="7" y1="17" x2="17" y2="7" />
               </svg>
             )}
           </button>
