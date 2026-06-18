@@ -1,13 +1,14 @@
 name: Deploy Admin Dashboard
 
 on:
-push:
-branches:
-- develop
+  push:
+    branches:
+      - develop
 
 jobs:
-deploy:
-runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
+
 
 steps:
   - name: Deploy to EC2
@@ -20,18 +21,14 @@ steps:
       script: |
         set -e
 
-        echo "Go to project directory"
         cd /home/ubuntu/apps/social_admin
 
-        echo "Pull latest code"
         git pull origin develop
 
-        echo "Build and restart container"
         docker compose down
         docker compose up -d --build
 
-        echo "Cleanup old images"
         docker image prune -f
 
-        echo "Show running containers"
         docker compose ps
+
