@@ -35,13 +35,17 @@ export default function UserReportsPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [newStatus, setNewStatus] = useState<UserReporter['status']>('pending');
-  const [note, setNote] = useState('');
+  const [banReason, setBanReason] = useState<string>('Vi phạm tiêu chuẩn cộng đồng');
+  const [banDuration, setBanDuration] = useState<'3' | '7' | '30' | 'custom' | 'permanent'>('3');
+  const [customBanDays, setCustomBanDays] = useState<string>('14');
 
   // Bulk update states
   const [selectedReporters, setSelectedReporters] = useState<Set<string>>(new Set());
   const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
   const [bulkUpdateStatus, setBulkUpdateStatus] = useState<UserReporter['status']>('pending');
-  const [bulkUpdateNote, setBulkUpdateNote] = useState('');
+  const [bulkBanDuration, setBulkBanDuration] = useState<'3' | '7' | '30' | 'custom' | 'permanent'>('3');
+  const [bulkCustomBanDays, setBulkCustomBanDays] = useState<string>('14');
+  const [bulkBanReason, setBulkBanReason] = useState<string>('Vi phạm tiêu chuẩn cộng đồng');
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const toggleExpand = (userId: string) => {
@@ -100,7 +104,9 @@ export default function UserReportsPage() {
       setSelectedReporter(null);
       setNewStatus('pending');
     }
-    setNote('');
+    setBanReason('Vi phạm tiêu chuẩn cộng đồng');
+    setBanDuration('3');
+    setCustomBanDays('14');
     setIsDetailOpen(true);
   };
 
@@ -108,11 +114,34 @@ export default function UserReportsPage() {
     if (!selectedReport || !selectedReporter) return;
     try {
       setUpdatingStatus(true);
-      await api.adminUpdateUserReportStatus(selectedReporter._id, newStatus, note || undefined);
+
+      let banUntilIso: string | null = null;
+      if (newStatus === 'reviewed') {
+        if (banDuration !== 'permanent') {
+          const days = banDuration === 'custom' ? parseInt(customBanDays, 10) : parseInt(banDuration, 10);
+          if (isNaN(days) || days <= 0) {
+            throw new Error('Số ngày cấm không hợp lệ');
+          }
+          const banUntilDate = new Date();
+          banUntilDate.setDate(banUntilDate.getDate() + days);
+          banUntilIso = banUntilDate.toISOString();
+        }
+      }
+
+      await api.adminUpdateUserReportStatus(
+        selectedReporter._id,
+        newStatus,
+        banUntilIso,
+        newStatus === 'reviewed' ? banReason || 'Vi phạm tiêu chuẩn cộng đồng' : undefined,
+      );
+
       toast.success('Cập nhật trạng thái báo cáo người dùng thành công');
       setIsDetailOpen(false);
       setSelectedReport(null);
       setSelectedReporter(null);
+      setBanReason('Vi phạm tiêu chuẩn cộng đồng');
+      setBanDuration('3');
+      setCustomBanDays('14');
       loadReports(pagination?.currentPage || 1);
     } catch (error: any) {
       const errorMessage =
@@ -138,7 +167,7 @@ export default function UserReportsPage() {
   const toggleSelectAllInUser = (report: GroupedUserReport) => {
     const reporterIds = report.reporters.map((r) => r._id);
     const allSelected = reporterIds.every((id) => selectedReporters.has(id));
-    
+
     const newSelected = new Set(selectedReporters);
     if (allSelected) {
       reporterIds.forEach((id) => newSelected.delete(id));
@@ -157,15 +186,31 @@ export default function UserReportsPage() {
     try {
       setBulkUpdating(true);
       const reportIds = Array.from(selectedReporters);
+      let banUntilIso: string | null = null;
+      if (bulkUpdateStatus === 'reviewed') {
+        if (bulkBanDuration !== 'permanent') {
+          const days = bulkBanDuration === 'custom' ? parseInt(bulkCustomBanDays, 10) : parseInt(bulkBanDuration, 10);
+          if (isNaN(days) || days <= 0) {
+            throw new Error('Số ngày cấm không hợp lệ');
+          }
+          const banUntilDate = new Date();
+          banUntilDate.setDate(banUntilDate.getDate() + days);
+          banUntilIso = banUntilDate.toISOString();
+        }
+      }
+
       const result = await api.adminBulkUpdateUserReportStatus(
         reportIds,
         bulkUpdateStatus,
-        bulkUpdateNote || undefined,
+        banUntilIso,
+        bulkUpdateStatus === 'reviewed' ? bulkBanReason || 'Vi phạm tiêu chuẩn cộng đồng' : undefined,
       );
       toast.success(`Đã cập nhật ${result.updatedCount} báo cáo người dùng thành công`);
       setIsBulkUpdateOpen(false);
       setSelectedReporters(new Set());
-      setBulkUpdateNote('');
+      setBulkBanDuration('3');
+      setBulkCustomBanDays('14');
+      setBulkBanReason('Vi phạm tiêu chuẩn cộng đồng');
       loadReports(pagination?.currentPage || 1);
     } catch (error: any) {
       const errorMessage =
@@ -350,12 +395,11 @@ export default function UserReportsPage() {
                               <p className="text-xs text-slate-400 truncate">{reportedUser.email}</p>
                               <div className="flex items-center gap-1.5">
                                 <span
-                                  className={`inline-block w-1.5 h-1.5 rounded-full ${
-                                    reportedUser.isActive ? 'bg-emerald-500' : 'bg-rose-500'
-                                  }`}
+                                  className={`inline-block w-1.5 h-1.5 rounded-full ${reportedUser.isBan ? 'bg-rose-500' : 'bg-emerald-500'
+                                    }`}
                                 />
                                 <span className="text-[11px] text-slate-400">
-                                  {reportedUser.isActive ? 'Hoạt động' : 'Vô hiệu hóa'}
+                                  {reportedUser.isBan ? 'Vô hiệu hóa' : 'Hoạt động'}
                                 </span>
                                 {reportedUser.role === 'admin' && (
                                   <span className="ml-1 px-1 py-0.5 text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded font-medium">
@@ -377,13 +421,12 @@ export default function UserReportsPage() {
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs text-amber-400">Chờ xử lý:</span>
                                   <span
-                                    className={`text-sm font-semibold ${
-                                      report.reportCounts.pending >= 50
-                                        ? 'text-red-400'
-                                        : report.reportCounts.pending >= 20
+                                    className={`text-sm font-semibold ${report.reportCounts.pending >= 50
+                                      ? 'text-red-400'
+                                      : report.reportCounts.pending >= 20
                                         ? 'text-amber-400'
                                         : 'text-slate-300'
-                                    }`}
+                                      }`}
                                   >
                                     {report.reportCounts.pending}
                                     {report.reportCounts.pending >= 50 && (
@@ -487,11 +530,10 @@ export default function UserReportsPage() {
                                   {report.reporters.map((reporter) => (
                                     <div
                                       key={reporter._id}
-                                      className={`flex items-start gap-4 p-3 rounded-lg border ${
-                                        selectedReporters.has(reporter._id)
-                                          ? 'bg-blue-500/10 border-blue-500/40'
-                                          : 'bg-slate-800/40 border-slate-700/50'
-                                      }`}
+                                      className={`flex items-start gap-4 p-3 rounded-lg border ${selectedReporters.has(reporter._id)
+                                        ? 'bg-blue-500/10 border-blue-500/40'
+                                        : 'bg-slate-800/40 border-slate-700/50'
+                                        }`}
                                     >
                                       <div className="flex items-center pt-2">
                                         <input
@@ -585,11 +627,10 @@ export default function UserReportsPage() {
                   key={page}
                   type="button"
                   onClick={() => handlePageChange(page)}
-                  className={`px-4 py-2 rounded-xl text-sm ${
-                    page === pagination?.currentPage
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-300 border border-transparent hover:border-slate-600'
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-sm ${page === pagination?.currentPage
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 border border-transparent hover:border-slate-600'
+                    }`}
                 >
                   {page}
                 </button>
@@ -613,7 +654,7 @@ export default function UserReportsPage() {
           setIsDetailOpen(false);
           setSelectedReport(null);
           setSelectedReporter(null);
-          setNote('');
+          setBanReason('Vi phạm tiêu chuẩn cộng đồng');
         }}
         title="Chi tiết báo cáo người dùng"
         size="xl"
@@ -651,13 +692,12 @@ export default function UserReportsPage() {
                   <span className="text-xs text-slate-400">Trạng thái hiện tại:</span>
                   <div className="flex items-center gap-2">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
-                        selectedReport.reportedUser.isActive
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                      }`}
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${selectedReport.reportedUser.isBan
+                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                        }`}
                     >
-                      {selectedReport.reportedUser.isActive ? 'Đang hoạt động' : 'Đã khóa'}
+                      {selectedReport.reportedUser.isBan ? 'Đã khóa' : 'Đang hoạt động'}
                     </span>
                   </div>
                 </div>
@@ -675,11 +715,10 @@ export default function UserReportsPage() {
                       <div className="bg-slate-900/50 p-2 rounded-lg border border-slate-800">
                         <span className="text-amber-400">Chờ xử lý:</span>
                         <span
-                          className={`ml-1 font-semibold block text-sm mt-0.5 ${
-                            selectedReport.reportCounts.pending >= 50
-                              ? 'text-red-400'
-                              : 'text-amber-300'
-                          }`}
+                          className={`ml-1 font-semibold block text-sm mt-0.5 ${selectedReport.reportCounts.pending >= 50
+                            ? 'text-red-400'
+                            : 'text-amber-300'
+                            }`}
                         >
                           {selectedReport.reportCounts.pending}
                         </span>
@@ -736,18 +775,74 @@ export default function UserReportsPage() {
                       </p>
                     </div>
 
-                    <div>
-                      <label className="block text-xs text-slate-400 font-medium mb-1">
-                        Ghi chú xử lý / Lý do (Gửi cho người dùng bị xử lý)
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={note}
-                        onChange={(e) => setNote(e.target.value)}
-                        placeholder="Nhập ghi chú hoặc lý do cấm tài khoản..."
-                        className="w-full bg-slate-900/60 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-500"
-                      />
-                    </div>
+                    {newStatus === 'reviewed' && (
+                      <>
+                        <div className="space-y-2">
+                          <label className="block text-xs text-slate-400 font-medium">
+                            Thời hạn cấm <span className="text-red-400">*</span>
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { value: '3', label: '3 Ngày' },
+                              { value: '7', label: '7 Ngày' },
+                              { value: '30', label: '30 Ngày' },
+                              { value: 'permanent', label: 'Vĩnh viễn' },
+                              { value: 'custom', label: 'Tùy chỉnh' },
+                            ].map((opt) => (
+                              <label
+                                key={opt.value}
+                                className={`flex items-center justify-center py-2 rounded-lg border cursor-pointer transition-colors ${banDuration === opt.value
+                                  ? 'border-indigo-500 bg-indigo-500/10 text-white'
+                                  : 'border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600'
+                                  }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name="detailBanDuration"
+                                  value={opt.value}
+                                  checked={banDuration === opt.value}
+                                  onChange={() => setBanDuration(opt.value as any)}
+                                  className="sr-only"
+                                />
+                                <span className="text-xs font-medium">{opt.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {banDuration === 'custom' && (
+                          <div>
+                            <label className="block text-xs text-slate-400 font-medium mb-1">
+                              Số ngày cấm <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={customBanDays}
+                              onChange={(e) => setCustomBanDays(e.target.value)}
+                              className="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              placeholder="Nhập số ngày cấm"
+                              required
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {newStatus === 'reviewed' && (
+                      <div>
+                        <label className="block text-xs text-slate-400 font-medium mb-1">
+                          Lý do cấm
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={banReason}
+                          onChange={(e) => setBanReason(e.target.value)}
+                          placeholder="Nhập lý do cấm..."
+                          className="w-full bg-slate-900/60 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-500"
+                        />
+                      </div>
+                    )}
 
                     <div className="flex gap-2">
                       <Button
@@ -788,11 +883,10 @@ export default function UserReportsPage() {
                 {selectedReport.reporters.map((reporter) => (
                   <div
                     key={reporter._id}
-                    className={`flex items-start gap-4 p-3 rounded-xl border ${
-                      selectedReporter?._id === reporter._id
-                        ? 'bg-blue-500/10 border-blue-500/40'
-                        : 'bg-slate-900/20 border-slate-800'
-                    }`}
+                    className={`flex items-start gap-4 p-3 rounded-xl border ${selectedReporter?._id === reporter._id
+                      ? 'bg-blue-500/10 border-blue-500/40'
+                      : 'bg-slate-900/20 border-slate-800'
+                      }`}
                   >
                     <div className="flex items-center gap-3 flex-shrink-0 w-[200px]">
                       {reporter.userId?.avatarUrl ? (
@@ -841,7 +935,7 @@ export default function UserReportsPage() {
                           onClick={() => {
                             setSelectedReporter(reporter);
                             setNewStatus(reporter.status);
-                            setNote('');
+                            setBanReason('Vi phạm tiêu chuẩn cộng đồng');
                           }}
                           className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors"
                         >
@@ -857,12 +951,13 @@ export default function UserReportsPage() {
         )}
       </Modal>
 
-      {/* Bulk Update Modal */}
       <Modal
         isOpen={isBulkUpdateOpen}
         onClose={() => {
           setIsBulkUpdateOpen(false);
-          setBulkUpdateNote('');
+          setBulkBanDuration('3');
+          setBulkCustomBanDays('14');
+          setBulkBanReason('Vi phạm tiêu chuẩn cộng đồng');
         }}
         title={`Cập nhật hàng loạt (${selectedReporters.size} báo cáo)`}
         size="md"
@@ -883,18 +978,72 @@ export default function UserReportsPage() {
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs text-slate-400 font-medium mb-1">
-              Ghi chú xử lý / Lý do
-            </label>
-            <textarea
-              rows={3}
-              value={bulkUpdateNote}
-              onChange={(e) => setBulkUpdateNote(e.target.value)}
-              placeholder="Ghi chú áp dụng chung cho loạt báo cáo..."
-              className="w-full bg-slate-900/60 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-500"
-            />
-          </div>
+          {bulkUpdateStatus === 'reviewed' && (
+            <>
+              <div className="space-y-2">
+                <label className="block text-xs text-slate-400 font-medium">
+                  Thời hạn cấm <span className="text-red-400">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: '3', label: '3 Ngày' },
+                    { value: '7', label: '7 Ngày' },
+                    { value: '30', label: '30 Ngày' },
+                    { value: 'permanent', label: 'Vĩnh viễn' },
+                    { value: 'custom', label: 'Tùy chỉnh' },
+                  ].map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`flex items-center justify-center py-2 rounded-lg border cursor-pointer transition-colors ${bulkBanDuration === opt.value
+                        ? 'border-indigo-500 bg-indigo-500/10 text-white'
+                        : 'border-slate-700 bg-slate-900/60 text-slate-400 hover:border-slate-600'
+                        }`}
+                    >
+                      <input
+                        type="radio"
+                        name="bulkBanDuration"
+                        value={opt.value}
+                        checked={bulkBanDuration === opt.value}
+                        onChange={() => setBulkBanDuration(opt.value as any)}
+                        className="sr-only"
+                      />
+                      <span className="text-xs font-medium">{opt.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {bulkBanDuration === 'custom' && (
+                <div>
+                  <label className="block text-xs text-slate-400 font-medium mb-1">
+                    Số ngày cấm <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={bulkCustomBanDays}
+                    onChange={(e) => setBulkCustomBanDays(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Nhập số ngày cấm"
+                    required
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs text-slate-400 font-medium mb-1">
+                  Lý do cấm
+                </label>
+                <textarea
+                  rows={2}
+                  value={bulkBanReason}
+                  onChange={(e) => setBulkBanReason(e.target.value)}
+                  placeholder="Nhập lý do cấm..."
+                  className="w-full bg-slate-900/60 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-500"
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex gap-2 justify-end">
             <Button

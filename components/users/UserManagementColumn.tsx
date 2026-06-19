@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { useUserManagement } from './management/hooks/useUserManagement';
 import { useUserForm } from './management/hooks/useUserForm';
@@ -8,6 +8,8 @@ import UserFilters from './management/components/UserFilters';
 import UserTable from './management/components/UserTable';
 import PaginationControls from './management/components/PaginationControls';
 import UserFormModal from './management/components/UserFormModal';
+import BanUserModal from './management/components/BanUserModal';
+import type { User } from '@/lib/types';
 
 export default function UserManagementColumn() {
   const {
@@ -34,6 +36,9 @@ export default function UserManagementColumn() {
     fetchUsers,
   } = useUserManagement();
 
+  const [banUser, setBanUser] = useState<User | null>(null);
+  const [isBanModalOpen, setIsBanModalOpen] = useState(false);
+
   const {
     isCreateModalOpen,
     isCreating,
@@ -52,6 +57,15 @@ export default function UserManagementColumn() {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await handleSubmit(pagination?.currentPage || 1);
+  };
+
+  const handleToggleBanClick = (user: User) => {
+    if (user.isBan) {
+      handleToggleBanUser(user);
+    } else {
+      setBanUser(user);
+      setIsBanModalOpen(true);
+    }
   };
 
   return (
@@ -88,7 +102,7 @@ export default function UserManagementColumn() {
           selectedUserId={selectedUserId}
           onSelectUser={setSelectedUserId}
           onEditUser={openEditModal}
-          onToggleBanUser={handleToggleBanUser}
+          onToggleBanUser={handleToggleBanClick}
         />
 
         <PaginationControls
@@ -109,6 +123,20 @@ export default function UserManagementColumn() {
         onClose={handleCloseModal}
         onSubmit={handleFormSubmit}
         onFormDataChange={setFormData}
+      />
+
+      <BanUserModal
+        isOpen={isBanModalOpen}
+        user={banUser}
+        onClose={() => {
+          setIsBanModalOpen(false);
+          setBanUser(null);
+        }}
+        onConfirm={async (banUntil, banReason) => {
+          if (banUser) {
+            await handleToggleBanUser(banUser, banUntil, banReason);
+          }
+        }}
       />
     </section>
   );

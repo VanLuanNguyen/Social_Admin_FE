@@ -18,6 +18,8 @@ export interface User {
   username: string;
   isActive: boolean;
   isBan: boolean;
+  banUntil?: string;
+  banReason?: string;
   createdAt: string;
   updatedAt?: string;
   role: 'admin' | 'user';
@@ -224,7 +226,7 @@ export interface GroupedUserReport {
     username: string;
     avatarUrl?: string;
     email: string;
-    isActive: boolean;
+    isBan: boolean;
     role: 'admin' | 'user';
   };
   reporters: UserReporter[];

@@ -128,6 +128,23 @@ export default function UserInfoTab({ user }: UserInfoTabProps) {
         </p>
       </div>
 
+      {user.isBan && (
+        <>
+          <div>
+            <p className="text-xs text-rose-400 uppercase tracking-wider mb-1">Thời hạn khóa</p>
+            <p className="text-sm text-rose-300 font-semibold">
+              {user.banUntil ? new Date(user.banUntil).toLocaleString('vi-VN') : 'Vĩnh viễn'}
+            </p>
+          </div>
+          {user.banReason && (
+            <div>
+              <p className="text-xs text-rose-400 uppercase tracking-wider mb-1">Lý do khóa</p>
+              <p className="text-sm text-rose-300">{user.banReason}</p>
+            </div>
+          )}
+        </>
+      )}
+
       <div>
         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Ngày tạo</p>
         <p className="text-sm text-white">

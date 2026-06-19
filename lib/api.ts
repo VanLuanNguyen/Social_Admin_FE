@@ -149,13 +149,13 @@ export const api = {
     page: number = 1,
     limit: number = 10,
     search?: string,
-    isActive?: boolean,
+    isBan?: boolean,
     dateFrom?: string,
     dateTo?: string,
   ): Promise<AdminUsersResponse> => {
     const params: any = { page, limit };
     if (search) params.search = search;
-    if (isActive !== undefined) params.isActive = isActive;
+    if (isBan !== undefined) params.isBan = isBan;
     if (dateFrom) params.dateFrom = dateFrom;
     if (dateTo) params.dateTo = dateTo;
 
@@ -210,6 +210,8 @@ export const api = {
       relationshipStatus?: string;
       isActive?: boolean;
       isBan?: boolean;
+      banUntil?: string | null;
+      banReason?: string | null;
       role?: 'admin' | 'user';
     },
   ): Promise<User> => {
@@ -404,11 +406,13 @@ export const api = {
   adminUpdateUserReportStatus: async (
     reportId: string,
     status: 'pending' | 'reviewed' | 'rejected',
-    note?: string,
+    banUntil?: string | null,
+    banReason?: string,
   ): Promise<{ message: string; status: string }> => {
     const response = await apiClient.put(`/admin/user-reports/${reportId}/status`, {
       status,
-      note,
+      banUntil,
+      banReason,
     });
     return response.data.data || response.data;
   },
@@ -416,12 +420,14 @@ export const api = {
   adminBulkUpdateUserReportStatus: async (
     reportIds: string[],
     status: 'pending' | 'reviewed' | 'rejected',
-    note?: string,
+    banUntil?: string | null,
+    banReason?: string,
   ): Promise<{ message: string; updatedCount: number; matchedCount: number }> => {
     const response = await apiClient.put('/admin/user-reports/bulk-update', {
       reportIds,
       status,
-      note,
+      banUntil,
+      banReason,
     });
     return response.data.data || response.data;
   },

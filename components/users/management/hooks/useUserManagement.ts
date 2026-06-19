@@ -32,7 +32,7 @@ export const useUserManagement = () => {
         page,
         PAGE_LIMIT,
         searchQuery.trim() || undefined,
-        statusFilter === 'active' ? true : statusFilter === 'suspended' ? false : undefined,
+        statusFilter === 'active' ? false : statusFilter === 'suspended' ? true : undefined,
         calculatedDateFrom,
         calculatedDateTo
       );
@@ -103,26 +103,40 @@ export const useUserManagement = () => {
     fetchUsers(page);
   };
 
-  const handleToggleBanUser = async (user: User) => {
+  const handleToggleBanUser = async (user: User, banUntil?: string | null, banReason?: string) => {
     try {
-      const actionLabel = user.isBan ? 'bỏ cấm' : 'cấm';
-      // eslint-disable-next-line no-alert
-      const confirmed = window.confirm(`Bạn có chắc chắn muốn ${actionLabel} người dùng này?`);
-      if (!confirmed) return;
+      if (user.isBan) {
+        // eslint-disable-next-line no-alert
+        const confirmed = window.confirm('Bạn có chắc chắn muốn bỏ cấm người dùng này?');
+        if (!confirmed) return;
 
-      await api.adminUpdateUser(user.userId, { isBan: !user.isBan });
+        await api.adminUpdateUser(user.userId, { isBan: false });
 
-      toast.success(user.isBan ? 'Đã bỏ cấm người dùng' : 'Đã cấm người dùng');
+        toast.success('Đã bỏ cấm người dùng');
 
-      setUsers((prev) =>
-        prev.map((u) => (u.userId === user.userId ? { ...u, isBan: !u.isBan } : u))
-      );
+        setUsers((prev) =>
+          prev.map((u) => (u.userId === user.userId ? { ...u, isBan: false, banUntil: undefined, banReason: undefined } : u))
+        );
+      } else {
+        await api.adminUpdateUser(user.userId, {
+          isBan: true,
+          banUntil: banUntil || undefined,
+          banReason: banReason || undefined,
+        });
+
+        toast.success('Đã cấm người dùng');
+
+        setUsers((prev) =>
+          prev.map((u) => (u.userId === user.userId ? { ...u, isBan: true, banUntil: banUntil || undefined, banReason: banReason || undefined } : u))
+        );
+      }
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         'Không thể cập nhật trạng thái người dùng';
       toast.error(errorMessage);
+      if (!user.isBan) throw error;
     }
   };
 
