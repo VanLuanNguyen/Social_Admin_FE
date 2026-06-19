@@ -1,0 +1,9 @@
+services:
+  next-admin:
+    build: .
+    container_name: social-admin
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "3001:3001"
