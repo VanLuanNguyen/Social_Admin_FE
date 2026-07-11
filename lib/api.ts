@@ -325,6 +325,20 @@ export const api = {
     return response.data.data || response.data;
   },
 
+  adminGetTopRankings: async (): Promise<{
+    topSpammers: Array<{
+      reportCount: number;
+      user: User;
+    }>;
+    topCreators: Array<{
+      postCount: number;
+      user: User;
+    }>;
+  }> => {
+    const response = await apiClient.get('/admin/dashboard/top-rankings');
+    return response.data.data || response.data || { topSpammers: [], topCreators: [] };
+  },
+
   adminGetUsersGrowth: async (days: number = 30): Promise<UserGrowthData[]> => {
     const response = await apiClient.get('/admin/dashboard/users-growth', {
       params: { days },

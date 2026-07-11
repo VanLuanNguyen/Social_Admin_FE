@@ -1,6 +1,7 @@
 import React from 'react';
 import Modal from '@/components/ui/Modal';
 import type { Post } from '@/lib/types';
+import { formatTags } from '@/lib/utils';
 
 interface PostDetailModalProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ export default function PostDetailModal({ isOpen, onClose, post, loading }: Post
           <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-2">
             <p className="text-sm text-slate-400">Nội dung</p>
             <p className="text-base text-white whitespace-pre-wrap">
-              {post.caption || 'Bài viết không có nội dung'}
+              {formatTags(post.caption) || 'Bài viết không có nội dung'}
             </p>
           </div>
 
@@ -124,7 +125,7 @@ export default function PostDetailModal({ isOpen, onClose, post, loading }: Post
                       </div>
                     </div>
                     <p className="mt-3 text-sm text-slate-200 whitespace-pre-wrap">
-                      {comment.content}
+                      {formatTags(comment.content)}
                     </p>
                   </div>
                 ))}

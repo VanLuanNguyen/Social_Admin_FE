@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useState, useEffect } from 'react';
-import type { DashboardStats, UserGrowthData, PostStatsData } from '@/lib/types';
+import type { DashboardStats, UserGrowthData, PostStatsData, User } from '@/lib/types';
 import toast from 'react-hot-toast';
 import {
   LineChart,
@@ -31,6 +31,10 @@ export default function Home() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [userGrowth, setUserGrowth] = useState<UserGrowthData[]>([]);
   const [postStats, setPostStats] = useState<PostStatsData[]>([]);
+  const [pendingPostReportsCount, setPendingPostReportsCount] = useState(0);
+  const [pendingUserReportsCount, setPendingUserReportsCount] = useState(0);
+  const [topSpammers, setTopSpammers] = useState<Array<{ reportCount: number; user: User }>>([]);
+  const [topCreators, setTopCreators] = useState<Array<{ postCount: number; user: User }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,14 +44,21 @@ export default function Home() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsData, userGrowthData, postStatsData] = await Promise.all([
+      const [statsData, userGrowthData, postStatsData, postReportsData, userReportsData, rankingsData] = await Promise.all([
         api.adminGetDashboardStats(),
         api.adminGetUsersGrowth(30),
         api.adminGetPostsStats('day', 30),
+        api.adminGetPostReports(1, 1, 'pending'),
+        api.adminGetUserReports(1, 1, 'pending'),
+        api.adminGetTopRankings(),
       ]);
       setStats(statsData);
       setUserGrowth(userGrowthData || []);
       setPostStats(postStatsData || []);
+      setPendingPostReportsCount(postReportsData?.pagination?.totalItems || 0);
+      setPendingUserReportsCount(userReportsData?.pagination?.totalItems || 0);
+      setTopSpammers(rankingsData?.topSpammers || []);
+      setTopCreators(rankingsData?.topCreators || []);
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
@@ -209,6 +220,67 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Moderation Alerts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-slate-900/60 to-slate-950/60 rounded-xl border border-red-500/20 p-6 shadow-lg hover:shadow-red-500/5 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1.5">
+                <p className="text-sm font-semibold uppercase tracking-wider text-red-400">
+                  Báo cáo bài viết chờ xử lý
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl font-extrabold text-white">
+                    {loading ? '-' : pendingPostReportsCount}
+                  </p>
+                  <span className="text-xs text-slate-400">bài viết bị báo cáo</span>
+                </div>
+              </div>
+              <div className={`p-3 rounded-xl shadow-lg bg-gradient-to-br ${pendingPostReportsCount > 0 ? 'from-red-500 to-rose-600 animate-pulse' : 'from-slate-800 to-slate-700 opacity-60'}`}>
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+              <span className="text-xs text-slate-500">Cần xử lý kịp thời để giữ môi trường sạch</span>
+              <Link href="/post-reports?status=pending">
+                <span className="text-xs text-red-400 hover:text-red-300 hover:underline inline-flex items-center gap-1 font-medium cursor-pointer">
+                  Đi đến hàng chờ &rarr;
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-slate-900/60 to-slate-950/60 rounded-xl border border-amber-500/20 p-6 shadow-lg hover:shadow-amber-500/5 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1.5">
+                <p className="text-sm font-semibold uppercase tracking-wider text-amber-400">
+                  Báo cáo người dùng chờ xử lý
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl font-extrabold text-white">
+                    {loading ? '-' : pendingUserReportsCount}
+                  </p>
+                  <span className="text-xs text-slate-400">tài khoản bị báo cáo</span>
+                </div>
+              </div>
+              <div className={`p-3 rounded-xl shadow-lg bg-gradient-to-br ${pendingUserReportsCount > 0 ? 'from-amber-500 to-orange-600 animate-pulse' : 'from-slate-800 to-slate-700 opacity-60'}`}>
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+              <span className="text-xs text-slate-500">Xác minh danh tính hoặc hành vi vi phạm</span>
+              <Link href="/user-reports?status=pending">
+                <span className="text-xs text-amber-400 hover:text-amber-300 hover:underline inline-flex items-center gap-1 font-medium cursor-pointer">
+                  Xem danh sách cấm &rarr;
+                </span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* Biểu đồ tăng trưởng người dùng */}
         <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 mb-8 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-6">
@@ -315,131 +387,122 @@ export default function Home() {
           )}
         </div>
 
-        {/* Biểu đồ so sánh tổng số liệu */}
+        {/* System Rankings Dashboard */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Top Spammers */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg">
-            <h3 className="text-lg font-semibold text-white mb-6">
-              Phân bổ tổng số liệu
-            </h3>
-            {loading ? (
-              <div className="h-64 flex items-center justify-center text-slate-400">
-                Đang tải...
-              </div>
-            ) : pieChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
-                    }
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {pieChartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #475569',
-                      borderRadius: '8px',
-                      color: '#fff',
-                    }}
-                  />
-                  <Legend wrapperStyle={{ color: '#9ca3af' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-64 flex items-center justify-center text-slate-400">
-                Chưa có dữ liệu
-              </div>
-            )}
-          </div>
-
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg">
-            <h3 className="text-lg font-semibold text-white mb-6">
-              So sánh tổng số liệu
-            </h3>
-            {loading ? (
-              <div className="h-64 flex items-center justify-center text-slate-400">
-                Đang tải...
-              </div>
-            ) : barChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={barChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                  <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #475569',
-                      borderRadius: '8px',
-                      color: '#fff',
-                    }}
-                  />
-                  <Legend wrapperStyle={{ color: '#9ca3af' }} />
-                  <Bar dataKey="Người dùng" fill="#4f46e5" />
-                  <Bar dataKey="Bài viết" fill="#10b981" />
-                  <Bar dataKey="Story" fill="#8b5cf6" />
-                  <Bar dataKey="Bình luận" fill="#f59e0b" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-64 flex items-center justify-center text-slate-400">
-                Chưa có dữ liệu
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Quick Actions */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Thao tác nhanh
-            </h3>
-            <div className="space-y-3">
-              <Link href="/users">
-                <Button className="w-full" variant="primary">
-                  Quản lý người dùng
-                </Button>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white inline-flex items-center gap-2">
+                🚨 Tài khoản bị báo cáo nhiều nhất (7 ngày qua)
+              </h3>
+              <Link href="/user-reports">
+                <span className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer">
+                  Xem tất cả
+                </span>
               </Link>
             </div>
+            {loading ? (
+              <div className="h-64 flex items-center justify-center text-slate-400">Đang tải...</div>
+            ) : topSpammers.length > 0 ? (
+              <div className="space-y-4">
+                {topSpammers.map((item, index) => (
+                  <div
+                    key={item.user.userId}
+                    className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-700/30 hover:border-slate-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        {item.user.avatarUrl ? (
+                          <img
+                            src={item.user.avatarUrl}
+                            alt={item.user.fullName}
+                            className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-800"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-slate-750 flex items-center justify-center text-sm font-bold text-white">
+                            {item.user.fullName?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="absolute -top-1 -left-1 bg-red-500 text-[10px] font-bold text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900">
+                          {index + 1}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-semibold text-white">{item.user.fullName}</p>
+                          {item.user.isBan && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 rounded-md">
+                              Đã khóa
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400">@{item.user.username}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-red-400">{item.reportCount} lượt</p>
+                      <p className="text-[10px] text-slate-500">Bị báo cáo</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-slate-555 text-sm">
+                Không có tài khoản nào bị báo cáo trong tuần qua.
+              </div>
+            )}
           </div>
 
-          {/* System Info */}
+          {/* Top Creators */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700/50 p-6 shadow-lg">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Thông tin hệ thống
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Vai trò:</span>
-                <span className="font-medium text-white">
-                  {user?.role === 'admin' ? 'Administrator' : 'User'}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white inline-flex items-center gap-2">
+                👑 Thành viên tích cực nhất (Tổng số bài viết)
+              </h3>
+              <Link href="/users">
+                <span className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer">
+                  Quản lý user
                 </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Email:</span>
-                <span className="font-medium text-white">{user?.email}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Trạng thái:</span>
-                <span className="font-medium text-emerald-400">
-                  {user?.isActive ? 'Hoạt động' : 'Không hoạt động'}
-                </span>
-              </div>
+              </Link>
             </div>
+            {loading ? (
+              <div className="h-64 flex items-center justify-center text-slate-400">Đang tải...</div>
+            ) : topCreators.length > 0 ? (
+              <div className="space-y-4">
+                {topCreators.map((item, index) => (
+                  <div
+                    key={item.user.userId}
+                    className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/60 border border-slate-700/30 hover:border-slate-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {item.user.avatarUrl ? (
+                        <img
+                          src={item.user.avatarUrl}
+                          alt={item.user.fullName}
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-800"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-slate-750 flex items-center justify-center text-sm font-bold text-white">
+                          {item.user.fullName?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-semibold text-white">{item.user.fullName}</p>
+                        <p className="text-xs text-slate-400">@{item.user.username}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-emerald-400">{item.postCount} bài</p>
+                      <p className="text-[10px] text-slate-500">Đã đăng tải</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-slate-555 text-sm">
+                Chưa có dữ liệu bài đăng.
+              </div>
+            )}
           </div>
         </div>
       </div>

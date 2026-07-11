@@ -8,6 +8,7 @@ import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import type { Pagination, Post } from '@/lib/types';
+import { formatTags } from '@/lib/utils';
 
 const PAGE_LIMIT = 10;
 
@@ -173,7 +174,7 @@ export default function PostsPage() {
                       posts.map((post) => (
                         <tr key={post._id} className="hover:bg-slate-800/40 transition-colors">
                           <td className="px-6 py-4">
-                            <p className="font-semibold text-white line-clamp-2">{post.caption || 'Bài viết không có nội dung'}</p>
+                            <p className="font-semibold text-white line-clamp-2">{formatTags(post.caption) || 'Bài viết không có nội dung'}</p>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -214,10 +215,15 @@ export default function PostsPage() {
                           <td className="px-6 py-4 text-right">
                             <Button
                               variant="outline"
-                              className="border-slate-600 text-white hover:text-white hover:bg-slate-700/50"
+                              size="sm"
+                              className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700/50 p-2 rounded-xl inline-flex items-center justify-center shadow-md transition-all duration-200"
                               onClick={() => handleOpenDetail(post._id)}
+                              title="Xem chi tiết"
                             >
-                              Xem chi tiết
+                              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
                             </Button>
                           </td>
                         </tr>
@@ -314,7 +320,7 @@ export default function PostsPage() {
             <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-2">
               <p className="text-sm text-slate-400">Nội dung</p>
               <p className="text-base text-white whitespace-pre-wrap">
-                {selectedPost.caption || 'Bài viết không có nội dung'}
+                {formatTags(selectedPost.caption) || 'Bài viết không có nội dung'}
               </p>
             </div>
 
@@ -390,7 +396,7 @@ export default function PostsPage() {
                         </div>
                       </div>
                       <p className="mt-3 text-sm text-slate-200 whitespace-pre-wrap">
-                        {comment.content}
+                        {formatTags(comment.content)}
                       </p>
                     </div>
                   ))}

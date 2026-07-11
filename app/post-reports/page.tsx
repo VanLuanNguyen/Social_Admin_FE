@@ -7,6 +7,7 @@ import Modal from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import type { AdminPostReportsResponse, Pagination, PostReport, GroupedPostReport, PostReporter } from '@/lib/types';
+import { formatTags } from '@/lib/utils';
 
 const PAGE_LIMIT = 10;
 
@@ -203,16 +204,16 @@ export default function PostReportsPage() {
 
         <form
           onSubmit={handleSearch}
-          className="grid gap-4 md:grid-cols-2 bg-slate-900/40 border border-slate-800 rounded-2xl p-4"
+          className="flex flex-wrap items-end gap-4 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 max-w-md"
         >
-          <div>
+          <div className="flex-1 min-w-[200px]">
             <label className="block text-xs font-medium text-slate-400 mb-1">
-              Trạng thái
+              Trạng thái báo cáo
             </label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="w-full bg-slate-900/60 border border-slate-700 text-white text-sm rounded-2xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full bg-slate-900/60 border border-slate-700 text-white text-sm rounded-xl px-3 py-2.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Tất cả</option>
               <option value="pending">Chờ xử lý</option>
@@ -220,11 +221,9 @@ export default function PostReportsPage() {
               <option value="rejected">Đã từ chối</option>
             </select>
           </div>
-          <div className="flex items-end">
-            <Button type="submit" className="w-full rounded-2xl">
-              Lọc
-            </Button>
-          </div>
+          <Button type="submit" className="px-6 py-2.5 rounded-xl h-[42px]">
+            Lọc
+          </Button>
         </form>
 
         <div className="rounded-3xl border border-slate-800 bg-[#0d1628] shadow-2xl shadow-black/20">
@@ -232,13 +231,13 @@ export default function PostReportsPage() {
             <table className="min-w-full text-left">
               <thead className="text-xs uppercase tracking-widest text-slate-500 bg-slate-900/30">
                 <tr>
-                  <th className="px-6 py-4 font-medium w-8"></th>
-                  <th className="px-6 py-4 font-medium">Bài viết</th>
-                  <th className="px-6 py-4 font-medium">Người đăng</th>
-                  <th className="px-6 py-4 font-medium">Số lượng báo cáo</th>
-                  <th className="px-6 py-4 font-medium">Người báo cáo</th>
-                  <th className="px-6 py-4 font-medium">Thời gian báo cáo gần nhất</th>
-                  <th className="px-6 py-4 font-medium text-right">Hành động</th>
+                  <th className="px-6 py-4 font-medium w-12"></th>
+                  <th className="px-6 py-4 font-medium w-[30%] min-w-[280px] max-w-[350px]">Bài viết</th>
+                  <th className="px-6 py-4 font-medium w-[15%] min-w-[150px]">Người đăng</th>
+                  <th className="px-6 py-4 font-medium w-[22%] min-w-[200px]">Số lượng báo cáo</th>
+                  <th className="px-6 py-4 font-medium w-[18%] min-w-[160px]">Người báo cáo</th>
+                  <th className="px-6 py-4 font-medium w-[12%] min-w-[140px]">Thời gian báo cáo gần nhất</th>
+                  <th className="px-6 py-4 font-medium text-right w-[10%] min-w-[120px]">Hành động</th>
                 </tr>
               </thead>
               <tbody className="text-sm text-slate-200 divide-y divide-slate-800/80">
@@ -332,7 +331,7 @@ export default function PostReportsPage() {
                               )}
                             </button>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 w-[30%] min-w-[280px] max-w-[350px]">
                             <div className="flex items-start gap-3">
                               {report.postId?.urls && report.postId.urls.length > 0 && (
                                 <div className="flex-shrink-0 relative">
@@ -372,23 +371,25 @@ export default function PostReportsPage() {
                                   )}
                                 </div>
                               )}
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-white line-clamp-2">
-                                  {report.postId?.caption ||
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <p className="text-sm text-slate-200 font-medium leading-relaxed line-clamp-2 break-words">
+                                  {formatTags(report.postId?.caption) ||
                                     'Bài viết không có nội dung'}
                                 </p>
-                                <p className="text-xs text-slate-500 mt-1">
-                                  ID: {postId}
-                                </p>
-                                {report.postId?.urls && report.postId.urls.length > 0 && (
-                                  <p className="text-xs text-slate-500 mt-1">
-                                    {report.postId.urls.length} {report.postId.urls.length === 1 ? 'ảnh' : 'ảnh/video'}
-                                  </p>
-                                )}
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <code className="text-[10px] bg-slate-900/80 text-slate-400 px-1.5 py-0.5 rounded border border-slate-800/80 font-mono">
+                                    ID: {postId}
+                                  </code>
+                                  {report.postId?.urls && report.postId.urls.length > 0 && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-slate-800/40 px-1.5 py-0.5 rounded border border-slate-700/30">
+                                      📁 {report.postId.urls.length} {report.postId.urls.length === 1 ? 'ảnh' : 'ảnh/video'}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 w-[15%] min-w-[150px] max-w-[200px]">
                             <div className="flex items-center gap-3">
                               {postOwner?.avatarUrl ? (
                                 <img
@@ -403,11 +404,11 @@ export default function PostReportsPage() {
                                     : 'U'}
                                 </div>
                               )}
-                              <div>
-                                <p className="text-sm font-semibold text-white">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-white truncate max-w-[140px]">
                                   {postOwner?.fullName || 'Unknown'}
                                 </p>
-                                <p className="text-xs text-slate-400">
+                                <p className="text-xs text-slate-400 truncate max-w-[140px]">
                                   {postOwner?.username ? `@${postOwner.username}` : ''}
                                 </p>
                               </div>
@@ -415,40 +416,27 @@ export default function PostReportsPage() {
                           </td>
                           <td className="px-6 py-4">
                             {report.reportCounts ? (
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-slate-400">Tổng:</span>
-                                  <span className="text-sm font-semibold text-white">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
                                     {report.reportCounts.total}
                                   </span>
+                                  <span className="text-xs text-slate-400 font-medium">báo cáo</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-amber-400">Chờ xử lý:</span>
-                                  <span
-                                    className={`text-sm font-semibold ${
-                                      report.reportCounts.pending >= 100
-                                        ? 'text-red-400'
-                                        : report.reportCounts.pending >= 50
-                                        ? 'text-amber-400'
-                                        : 'text-slate-300'
-                                    }`}
-                                  >
-                                    {report.reportCounts.pending}
-                                    {report.reportCounts.pending >= 100 && (
-                                      <span className="ml-1 text-[10px]">⚠️</span>
-                                    )}
+                                <div className="flex flex-wrap gap-1.5">
+                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium border ${
+                                    report.reportCounts.pending >= 100
+                                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                      : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                  }`}>
+                                    Chờ: {report.reportCounts.pending}
+                                    {report.reportCounts.pending >= 100 && ' ⚠️'}
                                   </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-emerald-400">Đã xử lý:</span>
-                                  <span className="text-sm font-semibold text-emerald-300">
-                                    {report.reportCounts.reviewed}
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    Duyệt: {report.reportCounts.reviewed}
                                   </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-rose-400">Đã từ chối:</span>
-                                  <span className="text-sm font-semibold text-rose-300">
-                                    {report.reportCounts.rejected}
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                    Từ chối: {report.reportCounts.rejected}
                                   </span>
                                 </div>
                               </div>
@@ -488,16 +476,21 @@ export default function PostReportsPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-slate-300">
+                          <td className="px-6 py-4 text-xs text-slate-400 font-medium">
                             {new Date(report.latestReportDate).toLocaleString('vi-VN')}
                           </td>
                           <td className="px-6 py-4 text-right">
                             <Button
                               variant="outline"
-                              className="border-slate-700 text-white hover:text-white hover:bg-slate-800"
+                              size="sm"
+                              className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 p-2 rounded-xl inline-flex items-center justify-center shadow-md transition-all duration-200"
                               onClick={() => handleOpenDetail(report)}
+                              title="Xem chi tiết"
                             >
-                              Xem chi tiết
+                              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
                             </Button>
                           </td>
                         </tr>
@@ -700,52 +693,49 @@ export default function PostReportsPage() {
                   </div>
                 )}
                 <p className="text-sm text-white line-clamp-3">
-                  {selectedReport.postId?.caption || 'Bài viết không có nội dung'}
+                  {formatTags(selectedReport.postId?.caption) || 'Bài viết không có nội dung'}
                 </p>
                 <p className="mt-2 text-[11px] text-slate-500">
                   ID: {selectedReport.postId?._id}
                 </p>
                 {selectedReport.reportCounts && (
                   <div className="mt-3 pt-3 border-t border-slate-800">
-                    <p className="text-xs text-slate-400 mb-2">Thống kê báo cáo</p>
+                    <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-2">Thống kê báo cáo</p>
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-slate-500">Tổng:</span>
-                        <span className="ml-1 font-semibold text-white">
+                      <div className="bg-slate-900/50 p-2 rounded-lg border border-slate-800">
+                        <span className="text-slate-500">Tổng báo cáo:</span>
+                        <span className="ml-1 font-semibold text-white block text-sm mt-0.5">
                           {selectedReport.reportCounts.total}
                         </span>
                       </div>
-                      <div>
+                      <div className="bg-slate-900/50 p-2 rounded-lg border border-slate-800">
                         <span className="text-amber-400">Chờ xử lý:</span>
                         <span
-                          className={`ml-1 font-semibold ${
+                          className={`ml-1 font-semibold block text-sm mt-0.5 ${
                             selectedReport.reportCounts.pending >= 100
                               ? 'text-red-400'
-                              : selectedReport.reportCounts.pending >= 50
-                              ? 'text-amber-400'
-                              : 'text-slate-300'
+                              : 'text-amber-300'
                           }`}
                         >
                           {selectedReport.reportCounts.pending}
-                          {selectedReport.reportCounts.pending >= 100 && ' ⚠️'}
                         </span>
                       </div>
-                      <div>
+                      <div className="bg-slate-900/50 p-2 rounded-lg border border-slate-800">
                         <span className="text-emerald-400">Đã xử lý:</span>
-                        <span className="ml-1 font-semibold text-emerald-300">
+                        <span className="ml-1 font-semibold text-emerald-300 block text-sm mt-0.5">
                           {selectedReport.reportCounts.reviewed}
                         </span>
                       </div>
-                      <div>
+                      <div className="bg-slate-900/50 p-2 rounded-lg border border-slate-800">
                         <span className="text-rose-400">Đã từ chối:</span>
-                        <span className="ml-1 font-semibold text-rose-300">
+                        <span className="ml-1 font-semibold text-rose-300 block text-sm mt-0.5">
                           {selectedReport.reportCounts.rejected}
                         </span>
                       </div>
                     </div>
                     {selectedReport.reportCounts.pending >= 100 && (
                       <div className="mt-2 p-2 bg-red-500/10 border border-red-500/40 rounded-lg">
-                        <p className="text-[11px] text-red-400">
+                        <p className="text-[11px] text-red-400 font-medium">
                           ⚠️ Bài viết này có {selectedReport.reportCounts.pending} báo cáo đang chờ xử lý và đã được tự động ẩn.
                         </p>
                       </div>
@@ -753,54 +743,86 @@ export default function PostReportsPage() {
                   </div>
                 )}
               </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-4">
                 <div>
-                  <p className="text-xs text-slate-400 mb-1">Người đăng</p>
-                  <p className="text-sm text-white font-semibold">
-                    {selectedReport.postId &&
-                    typeof selectedReport.postId.userId === 'object'
-                      ? selectedReport.postId.userId.fullName
-                      : 'Unknown'}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {selectedReport.postId &&
-                    typeof selectedReport.postId.userId === 'object'
-                      ? `@${selectedReport.postId.userId.username}`
-                      : ''}
-                  </p>
+                  <p className="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">Người đăng bài viết</p>
+                  {selectedReport.postId && typeof selectedReport.postId.userId === 'object' ? (
+                    <div className="flex items-center gap-3 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                      {selectedReport.postId.userId.avatarUrl ? (
+                        <img
+                          src={selectedReport.postId.userId.avatarUrl}
+                          alt={selectedReport.postId.userId.fullName}
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-700"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-semibold text-white">
+                          {selectedReport.postId.userId.fullName ? selectedReport.postId.userId.fullName.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-white truncate">
+                          {selectedReport.postId.userId.fullName}
+                        </p>
+                        <p className="text-xs text-slate-400 truncate">
+                          @{selectedReport.postId.userId.username}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500 italic">Không rõ người đăng</p>
+                  )}
                 </div>
                 {selectedReporter && (
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">Người báo cáo (đang xử lý)</p>
-                    <p className="text-sm text-white font-semibold">
-                      {selectedReporter.userId.fullName}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      @{selectedReporter.userId.username}
-                    </p>
+                  <div className="mt-3">
+                    <p className="text-xs text-slate-400 mb-2 font-semibold uppercase tracking-wider">Người báo cáo (Đang chọn)</p>
+                    <div className="flex items-center gap-3 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                      {selectedReporter.userId.avatarUrl ? (
+                        <img
+                          src={selectedReporter.userId.avatarUrl}
+                          alt={selectedReporter.userId.fullName}
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-700"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-semibold text-white">
+                          {selectedReporter.userId.fullName ? selectedReporter.userId.fullName.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-white truncate">
+                          {selectedReporter.userId.fullName}
+                        </p>
+                        <p className="text-xs text-slate-400 truncate">
+                          @{selectedReporter.userId.username}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
             {selectedReporter && (
-              <>
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-2">
-                  <p className="text-xs text-slate-400">Lý do</p>
-                  <p className="text-sm text-white whitespace-pre-wrap">
-                    {selectedReporter.reason}
-                  </p>
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Lý do báo cáo</p>
+                  <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <p className="text-sm text-amber-200 font-medium whitespace-pre-wrap">
+                      {selectedReporter.reason}
+                    </p>
+                  </div>
                 </div>
 
                 {selectedReporter.description && (
                   <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-2">
-                    <p className="text-xs text-slate-400">Mô tả chi tiết</p>
-                    <p className="text-sm text-slate-200 whitespace-pre-wrap">
-                      {selectedReporter.description}
-                    </p>
+                    <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Mô tả chi tiết</p>
+                    <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                      <p className="text-sm text-slate-200 whitespace-pre-wrap">
+                        {selectedReporter.description}
+                      </p>
+                    </div>
                   </div>
                 )}
-              </>
+              </div>
             )}
 
             {selectedReport.reporters && selectedReport.reporters.length > 0 && (
